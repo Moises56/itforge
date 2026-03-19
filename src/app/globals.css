@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ───────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --background:      #070a10;
+  --surface:         #0c1118;
+  --surface-2:       #111825;
+  --surface-3:       #161f2e;
+
+  /* Borders */
+  --border:          #1a2535;
+  --border-bright:   #253248;
+  --border-focus:    #2563eb;
+
+  /* Accent */
+  --accent:          #2563eb;
+  --accent-hover:    #1d4ed8;
+  --accent-glow:     rgba(37, 99, 235, 0.12);
+  --accent-cyan:     #06b6d4;
+  --accent-cyan-dim: rgba(6, 182, 212, 0.15);
+
+  /* Text */
+  --foreground:      #cbd5e1;
+  --foreground-muted: #64748b;
+  --foreground-dim:  #334155;
+
+  /* Status */
+  --status-green:    #10b981;
+  --status-blue:     #3b82f6;
+  --status-purple:   #8b5cf6;
+  --status-amber:    #f59e0b;
+  --status-red:      #ef4444;
+  --status-slate:    #475569;
 }
+
+/* ─── Tailwind v4 Theme Extension ─────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colors */
+  --color-background:   var(--background);
+  --color-surface:      var(--surface);
+  --color-surface-2:    var(--surface-2);
+  --color-surface-3:    var(--surface-3);
+  --color-border:       var(--border);
+  --color-foreground:   var(--foreground);
+  --color-accent:       var(--accent);
+  --color-accent-cyan:  var(--accent-cyan);
+
+  /* Fonts — maps to utility classes: font-sans, font-mono, font-heading */
+  --font-sans:    var(--font-barlow), 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), 'Fira Code', monospace;
+  --font-heading: var(--font-rajdhani), 'Impact', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base Reset ──────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
+html,
 body {
+  height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-barlow), 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ──────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-rajdhani), system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-jetbrains), monospace;
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: var(--background); }
+::-webkit-scrollbar-thumb  { background: var(--border-bright); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ─── Focus ───────────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 1.5px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* ─── Selection ───────────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--accent-glow);
+  color: var(--accent-cyan);
+}
+
+/* ─── Utility: scanlines overlay (optional, subtle) ───────────────────────── */
+
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Utility: grid dot pattern ───────────────────────────────────────────── */
+
+.dot-grid {
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
