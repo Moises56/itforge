@@ -21,10 +21,17 @@
       "Bash(do)",
       "Bash(touch \"$dir/.gitkeep\")",
       "Bash(pnpm typecheck:*)",
-      "Bash(pnpm db:push)"
+      "Bash(pnpm db:push)",
+      "Bash(pnpm db:seed)",
+      "Bash(cat \"/c/Users/GIS-MOISES/Desktop/New-Proyectos/itforge/src/app/\\(dashboard\\)/layout.tsx\")",
+      "Bash(cat \"/c/Users/GIS-MOISES/Desktop/New-Proyectos/itforge/src/app/\\(dashboard\\)/page.tsx\")",
+      "Bash(npx tsc:*)",
+      "Bash(ls \"c:/Users/GIS-MOISES/Desktop/New-Proyectos/itforge/src/app/\\(dashboard\\)/\")",
+      "Bash(ls \"c:/Users/GIS-MOISES/Desktop/New-Proyectos/itforge/src/app/\\(dashboard\\)/admin/\")"
     ],
     "additionalDirectories": [
-      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge-tmp"
+      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge-tmp",
+      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge\\src\\app\\(dashboard)\\admin\\roles\\[id]"
     ]
   }
 }

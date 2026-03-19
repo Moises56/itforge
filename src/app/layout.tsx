@@ -36,7 +36,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="es"
       className={`${rajdhani.variable} ${barlow.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="h-full bg-background text-foreground">{children}</body>
+      <body className="h-full bg-background text-foreground" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   )
 }
