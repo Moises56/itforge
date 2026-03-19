@@ -1,0 +1,179 @@
+// ITForge — Prisma Schema
+// Conventions: @map / @@map for snake_case in DB, camelCase in code
+// Every table: id (UUID), createdAt, updatedAt
+// Soft deletes: deletedAt DateTime?
+// Multi-tenant: organizationId on every business entity
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Organization (top-level tenant) ─────────────────────────────────────────
+
+model Organization {
+  id             String    @id @default(uuid())
+  name           String
+  slug           String    @unique
+  logoPath       String?   @map("logo_path")
+  primaryColor   String?   @map("primary_color")
+  secondaryColor String?   @map("secondary_color")
+  faviconPath    String?   @map("favicon_path")
+
+  // Feature flags
+  developmentEnabled    Boolean @default(true)  @map("development_enabled")
+  infrastructureEnabled Boolean @default(false) @map("infrastructure_enabled")
+  supportEnabled        Boolean @default(false) @map("support_enabled")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  users    User[]
+  roles    Role[]
+  sessions Session[]
+
+  @@map("organizations")
+}
+
+// ─── Users & Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  email          String
+  passwordHash   String    @map("password_hash")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  isActive       Boolean   @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  sessions        Session[]
+  userRoles       UserRole[]
+  userPermissions UserPermission[]
+  loginAttempts   LoginAttempt[]
+  auditLogs       AuditLog[]
+
+  @@unique([organizationId, email])
+  @@map("users")
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  organizationId String   @map("organization_id")
+  expiresAt      DateTime @map("expires_at")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("sessions")
+}
+
+model LoginAttempt {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  email      String
+  ipAddress  String   @map("ip_address")
+  successful Boolean
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("login_attempts")
+}
+
+// ─── RBAC ─────────────────────────────────────────────────────────────────────
+
+model Role {
+  id             String  @id @default(uuid())
+  organizationId String  @map("organization_id")
+  name           String
+  description    String?
+  isDefault      Boolean @default(false) @map("is_default")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id       String @id @default(uuid())
+  roleId   String @map("role_id")
+  resource String
+  action   String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, resource, action])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id       String  @id @default(uuid())
+  userId   String  @map("user_id")
+  resource String
+  action   String
+  granted  Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resource, action])
+  @@map("user_permissions")
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String  @id @default(uuid())
+  userId     String  @map("user_id")
+  action     String
+  resource   String
+  resourceId String? @map("resource_id")
+  metadata   Json?
+  ipAddress  String? @map("ip_address")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
