@@ -21,7 +21,11 @@ import {
   Users,
   Network,
   Info,
+  Key,
+  FileText,
 } from 'lucide-react'
+import { CredentialsTab, type CredentialItem } from './credentials-tab'
+import { DocumentsTab, type DocumentItem } from './documents-tab'
 import {
   createEnvironment,
   updateEnvironment,
@@ -112,12 +116,14 @@ interface Props {
   targetRelations: RelationItem[]
   departments: Department[]
   allProjects: ProjectRef[]
+  credentials: CredentialItem[]
+  documents: DocumentItem[]
   canEdit: boolean
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-type TabKey = 'general' | 'environments' | 'techstack' | 'departments' | 'roles' | 'relations'
+type TabKey = 'general' | 'environments' | 'techstack' | 'departments' | 'roles' | 'relations' | 'credentials' | 'documents'
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'general',      label: 'General',          icon: <Info size={13} /> },
@@ -126,6 +132,8 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'departments',  label: 'Departamentos',     icon: <Building2 size={13} /> },
   { key: 'roles',        label: 'Roles',             icon: <Users size={13} /> },
   { key: 'relations',    label: 'Relaciones',        icon: <Network size={13} /> },
+  { key: 'credentials',  label: 'Credenciales',      icon: <Key size={13} /> },
+  { key: 'documents',    label: 'Documentos',        icon: <FileText size={13} /> },
 ]
 
 const ENV_META: Record<string, { label: string; color: string }> = {
@@ -1736,6 +1744,8 @@ export function ProjectDetailTabs({
   targetRelations,
   departments,
   allProjects,
+  credentials,
+  documents,
   canEdit,
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
@@ -1747,6 +1757,8 @@ export function ProjectDetailTabs({
     departments: departmentUsages.length,
     roles: projectRoles.length,
     relations: sourceRelations.length + targetRelations.length,
+    credentials: credentials.length,
+    documents: documents.length,
   }
 
   return (
@@ -1842,6 +1854,23 @@ export function ProjectDetailTabs({
             sourceRelations={sourceRelations}
             targetRelations={targetRelations}
             allProjects={allProjects}
+            canEdit={canEdit}
+          />
+        )}
+
+        {activeTab === 'credentials' && (
+          <CredentialsTab
+            projectId={project.id}
+            credentials={credentials}
+            environments={environments.map((e) => ({ id: e.id, type: e.type }))}
+            canEdit={canEdit}
+          />
+        )}
+
+        {activeTab === 'documents' && (
+          <DocumentsTab
+            projectId={project.id}
+            documents={documents}
             canEdit={canEdit}
           />
         )}

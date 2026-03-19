@@ -136,7 +136,7 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
   const { id } = await params
   const user = await getCurrentUser()
 
-  const [project, departments, allProjects, canEdit, canDelete] = await Promise.all([
+  const [project, departments, allProjects, credentials, documents, canEdit, canDelete] = await Promise.all([
     getProject(id, user.organizationId),
     prisma.department.findMany({
       where: { organizationId: user.organizationId, deletedAt: null },
@@ -148,11 +148,52 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
       select: { id: true, name: true, code: true },
       orderBy: { name: 'asc' },
     }),
+    prisma.projectCredential.findMany({
+      where: { projectId: id, deletedAt: null, project: { organizationId: user.organizationId } },
+      select: {
+        id: true, label: true, type: true, username: true, notes: true, createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.projectDocument.findMany({
+      where: { projectId: id, deletedAt: null, project: { organizationId: user.organizationId } },
+      select: {
+        id: true, title: true, type: true, fileSize: true, mimeType: true, createdAt: true,
+        uploadedBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
     resolvePermission(user.id, 'projects', 'edit'),
     resolvePermission(user.id, 'projects', 'delete'),
   ])
 
   if (!project) notFound()
+
+  // Fetch last reveal event per credential
+  const credentialIds = credentials.map((c) => c.id)
+  const revealLogs = credentialIds.length > 0
+    ? await prisma.auditLog.findMany({
+        where: {
+          action: 'reveal',
+          resource: 'projects.credentials',
+          resourceId: { in: credentialIds },
+        },
+        select: {
+          resourceId: true,
+          createdAt: true,
+          user: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        distinct: ['resourceId'],
+      })
+    : []
+
+  const lastRevealByCredId = Object.fromEntries(
+    revealLogs.map((l) => [
+      l.resourceId,
+      { at: l.createdAt.toISOString(), by: `${l.user.firstName} ${l.user.lastName}` },
+    ]),
+  )
 
   const productionUrl =
     project.environments.find((e) => e.type === 'PRODUCTION' && e.url)?.url ?? null
@@ -370,6 +411,24 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
         }))}
         departments={departments}
         allProjects={allProjects}
+        credentials={credentials.map((c) => ({
+          id: c.id,
+          label: c.label,
+          type: c.type,
+          username: c.username,
+          notes: c.notes,
+          createdAt: c.createdAt.toISOString(),
+          lastReveal: lastRevealByCredId[c.id] ?? null,
+        }))}
+        documents={documents.map((d) => ({
+          id: d.id,
+          title: d.title,
+          type: d.type,
+          fileSize: d.fileSize,
+          mimeType: d.mimeType,
+          createdAt: d.createdAt.toISOString(),
+          uploadedBy: d.uploadedBy,
+        }))}
         canEdit={canEdit}
       />
     </div>
