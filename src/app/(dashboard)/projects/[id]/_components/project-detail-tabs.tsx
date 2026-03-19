@@ -23,6 +23,11 @@ import {
   Info,
   Key,
   FileText,
+  GitPullRequest,
+  Flame,
+  AlertTriangle,
+  ArrowDown,
+  Minus,
 } from 'lucide-react'
 import { CredentialsTab, type CredentialItem } from './credentials-tab'
 import { DocumentsTab, type DocumentItem } from './documents-tab'
@@ -106,6 +111,17 @@ type RelationItem = {
 type Department = { id: string; name: string; code: string }
 type ProjectRef = { id: string; name: string; code: string }
 
+type ChangeRequestSummary = {
+  id:            string
+  title:         string
+  status:        string
+  priority:      string
+  type:          string
+  requesterName: string
+  assignedTo:    { id: string; firstName: string; lastName: string } | null
+  createdAt:     string
+}
+
 interface Props {
   project: ProjectInfo
   environments: Environment[]
@@ -118,22 +134,25 @@ interface Props {
   allProjects: ProjectRef[]
   credentials: CredentialItem[]
   documents: DocumentItem[]
+  changeRequests: ChangeRequestSummary[]
   canEdit: boolean
+  canManageChanges: boolean
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-type TabKey = 'general' | 'environments' | 'techstack' | 'departments' | 'roles' | 'relations' | 'credentials' | 'documents'
+type TabKey = 'general' | 'environments' | 'techstack' | 'departments' | 'roles' | 'relations' | 'credentials' | 'documents' | 'changes'
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'general',      label: 'General',          icon: <Info size={13} /> },
-  { key: 'environments', label: 'Ambientes',         icon: <Globe size={13} /> },
-  { key: 'techstack',    label: 'Stack Técnico',     icon: <Code2 size={13} /> },
-  { key: 'departments',  label: 'Departamentos',     icon: <Building2 size={13} /> },
-  { key: 'roles',        label: 'Roles',             icon: <Users size={13} /> },
-  { key: 'relations',    label: 'Relaciones',        icon: <Network size={13} /> },
-  { key: 'credentials',  label: 'Credenciales',      icon: <Key size={13} /> },
-  { key: 'documents',    label: 'Documentos',        icon: <FileText size={13} /> },
+  { key: 'general',      label: 'General',          icon: <Info             size={13} /> },
+  { key: 'environments', label: 'Ambientes',         icon: <Globe            size={13} /> },
+  { key: 'techstack',    label: 'Stack Técnico',     icon: <Code2            size={13} /> },
+  { key: 'departments',  label: 'Departamentos',     icon: <Building2        size={13} /> },
+  { key: 'roles',        label: 'Roles',             icon: <Users            size={13} /> },
+  { key: 'relations',    label: 'Relaciones',        icon: <Network          size={13} /> },
+  { key: 'credentials',  label: 'Credenciales',      icon: <Key              size={13} /> },
+  { key: 'documents',    label: 'Documentos',        icon: <FileText         size={13} /> },
+  { key: 'changes',      label: 'Cambios',           icon: <GitPullRequest   size={13} /> },
 ]
 
 const ENV_META: Record<string, { label: string; color: string }> = {
@@ -1732,6 +1751,220 @@ function RelationsTab({
   )
 }
 
+// ─── Tab: Changes ─────────────────────────────────────────────────────────────
+
+const CR_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  REQUESTED:    { label: 'Solicitado',  color: '#64748b' },
+  UNDER_REVIEW: { label: 'En Revisión', color: '#3b82f6' },
+  APPROVED:     { label: 'Aprobado',    color: '#10b981' },
+  REJECTED:     { label: 'Rechazado',   color: '#ef4444' },
+  IN_PROGRESS:  { label: 'En Progreso', color: '#f59e0b' },
+  COMPLETED:    { label: 'Completado',  color: '#059669' },
+  CANCELLED:    { label: 'Cancelado',   color: '#475569' },
+}
+
+const CR_PRIORITY_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  CRITICAL: { label: 'Crítica',  color: '#ef4444', icon: <Flame         size={10} /> },
+  HIGH:     { label: 'Alta',     color: '#f59e0b', icon: <AlertTriangle size={10} /> },
+  MEDIUM:   { label: 'Media',    color: '#3b82f6', icon: <ArrowDown     size={10} /> },
+  LOW:      { label: 'Baja',     color: '#64748b', icon: <Minus         size={10} /> },
+}
+
+const CR_TYPE_LABELS: Record<string, string> = {
+  NEW_FEATURE: 'Nueva Función', MODIFICATION: 'Modificación', BUG_FIX: 'Corrección',
+  DATA_CORRECTION: 'Datos', REPORT: 'Reporte', VISUAL_CHANGE: 'Visual', OTHER: 'Otro',
+}
+
+function ChangesTab({
+  projectId,
+  changeRequests,
+  canManage,
+}: {
+  projectId:      string
+  changeRequests: ChangeRequestSummary[]
+  canManage:      boolean
+}) {
+  // Status distribution
+  const byStatus = changeRequests.reduce<Record<string, number>>((acc, cr) => {
+    acc[cr.status] = (acc[cr.status] ?? 0) + 1
+    return acc
+  }, {})
+
+  const activeStatuses = Object.entries(CR_STATUS_CONFIG).filter(([s]) => (byStatus[s] ?? 0) > 0)
+
+  return (
+    <div className="space-y-4">
+      {/* Header with link to full view */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <GitPullRequest size={14} style={{ color: 'var(--accent-cyan)' }} />
+          <h3
+            className="text-xs font-heading font-semibold uppercase tracking-[0.15em]"
+            style={{ color: 'var(--foreground-muted)' }}
+          >
+            Solicitudes de Cambio
+          </h3>
+        </div>
+        <Link
+          href={`/projects/${projectId}/changes`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all"
+          style={{
+            color:      'var(--accent-cyan)',
+            background: 'var(--accent-cyan-dim)',
+            border:     '1px solid rgba(6,182,212,0.2)',
+          }}
+        >
+          <GitPullRequest size={11} />
+          Ver tablero Kanban
+          <ExternalLink size={10} />
+        </Link>
+      </div>
+
+      {changeRequests.length === 0 ? (
+        <div
+          className="rounded p-8 text-center"
+          style={{ background: 'var(--surface-2)', border: '1px dashed var(--border-bright)' }}
+        >
+          <GitPullRequest size={28} className="mx-auto mb-3 opacity-20" style={{ color: 'var(--foreground-muted)' }} />
+          <p className="text-sm font-medium" style={{ color: 'var(--foreground-muted)' }}>
+            Sin solicitudes de cambio
+          </p>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--foreground-dim)' }}>
+            Las solicitudes registran peticiones de mejoras, correcciones o nuevas funciones.
+          </p>
+          <Link
+            href={`/projects/${projectId}/changes`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all"
+            style={{
+              color:      'var(--accent-cyan)',
+              background: 'var(--accent-cyan-dim)',
+              border:     '1px solid rgba(6,182,212,0.2)',
+            }}
+          >
+            <Plus size={11} /> Crear primera solicitud
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Status distribution */}
+          {activeStatuses.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {activeStatuses.map(([status, cfg]) => (
+                <div
+                  key={status}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded"
+                  style={{ background: `${cfg.color}11`, border: `1px solid ${cfg.color}33` }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: cfg.color }}
+                  />
+                  <span className="text-[10px] font-semibold" style={{ color: cfg.color }}>
+                    {byStatus[status]}
+                  </span>
+                  <span className="text-[10px]" style={{ color: cfg.color }}>
+                    {cfg.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Recent CRs list */}
+          <div className="space-y-1.5">
+            {changeRequests
+              .slice()
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .slice(0, 12)
+              .map((cr) => {
+                const statusCfg = CR_STATUS_CONFIG[cr.status]
+                const prioCfg   = CR_PRIORITY_CONFIG[cr.priority]
+                return (
+                  <div
+                    key={cr.id}
+                    className="flex items-center gap-3 px-3 py-2 rounded"
+                    style={{
+                      background:  'var(--surface-2)',
+                      border:      '1px solid var(--border)',
+                      borderLeft:  `3px solid ${prioCfg?.color ?? '#64748b'}`,
+                    }}
+                  >
+                    {/* Status dot */}
+                    {statusCfg && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: statusCfg.color }}
+                        title={statusCfg.label}
+                      />
+                    )}
+
+                    {/* Title */}
+                    <p className="text-xs font-medium flex-1 truncate" style={{ color: 'var(--foreground)' }}>
+                      {cr.title}
+                    </p>
+
+                    {/* Type */}
+                    <span
+                      className="text-[9px] font-mono shrink-0 px-1.5 py-0.5 rounded hidden sm:inline-block"
+                      style={{ background: 'var(--surface)', color: 'var(--foreground-dim)', border: '1px solid var(--border)', fontFamily: 'var(--font-jetbrains)' }}
+                    >
+                      {CR_TYPE_LABELS[cr.type] ?? cr.type}
+                    </span>
+
+                    {/* Status badge */}
+                    {statusCfg && (
+                      <span
+                        className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 hidden md:inline-block"
+                        style={{ background: `${statusCfg.color}22`, color: statusCfg.color }}
+                      >
+                        {statusCfg.label}
+                      </span>
+                    )}
+
+                    {/* Priority */}
+                    {prioCfg && (
+                      <span
+                        className="inline-flex items-center gap-0.5 text-[9px] font-semibold shrink-0"
+                        style={{ color: prioCfg.color }}
+                      >
+                        {prioCfg.icon}
+                      </span>
+                    )}
+
+                    {/* Requester */}
+                    <span className="text-[9px] shrink-0 hidden lg:inline" style={{ color: 'var(--foreground-dim)' }}>
+                      {cr.requesterName}
+                    </span>
+
+                    {/* Assignee avatar */}
+                    {cr.assignedTo && (
+                      <span
+                        className="w-4 h-4 rounded-full text-[8px] font-bold flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--accent-cyan-dim)', color: 'var(--accent-cyan)' }}
+                        title={`${cr.assignedTo.firstName} ${cr.assignedTo.lastName}`}
+                      >
+                        {cr.assignedTo.firstName[0]}{cr.assignedTo.lastName[0]}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+
+          {changeRequests.length > 12 && (
+            <p className="text-[10px] text-center" style={{ color: 'var(--foreground-dim)' }}>
+              Mostrando 12 de {changeRequests.length} —{' '}
+              <Link href={`/projects/${projectId}/changes`} className="underline" style={{ color: 'var(--accent-cyan)' }}>
+                ver todas
+              </Link>
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main tabs component ──────────────────────────────────────────────────────
 
 export function ProjectDetailTabs({
@@ -1746,19 +1979,22 @@ export function ProjectDetailTabs({
   allProjects,
   credentials,
   documents,
+  changeRequests,
   canEdit,
+  canManageChanges,
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
 
   // Badge counts
   const counts: Partial<Record<TabKey, number>> = {
     environments: environments.length,
-    techstack: techStack.length,
-    departments: departmentUsages.length,
-    roles: projectRoles.length,
-    relations: sourceRelations.length + targetRelations.length,
-    credentials: credentials.length,
-    documents: documents.length,
+    techstack:    techStack.length,
+    departments:  departmentUsages.length,
+    roles:        projectRoles.length,
+    relations:    sourceRelations.length + targetRelations.length,
+    credentials:  credentials.length,
+    documents:    documents.length,
+    changes:      changeRequests.length,
   }
 
   return (
@@ -1872,6 +2108,14 @@ export function ProjectDetailTabs({
             projectId={project.id}
             documents={documents}
             canEdit={canEdit}
+          />
+        )}
+
+        {activeTab === 'changes' && (
+          <ChangesTab
+            projectId={project.id}
+            changeRequests={changeRequests}
+            canManage={canManageChanges}
           />
         )}
       </div>

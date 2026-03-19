@@ -117,8 +117,18 @@ async function getProject(id: string, organizationId: string) {
         orderBy: { createdAt: 'asc' },
       },
       changeRequests: {
-        where: { deletedAt: null },
-        select: { id: true },
+        where:   { deletedAt: null },
+        select: {
+          id:            true,
+          title:         true,
+          status:        true,
+          priority:      true,
+          type:          true,
+          requesterName: true,
+          createdAt:     true,
+          assignedTo:    { select: { id: true, firstName: true, lastName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
       },
       _count: {
         select: {
@@ -136,7 +146,7 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
   const { id } = await params
   const user = await getCurrentUser()
 
-  const [project, departments, allProjects, credentials, documents, canEdit, canDelete] = await Promise.all([
+  const [project, departments, allProjects, credentials, documents, canEdit, canDelete, canManageChanges] = await Promise.all([
     getProject(id, user.organizationId),
     prisma.department.findMany({
       where: { organizationId: user.organizationId, deletedAt: null },
@@ -165,6 +175,7 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
     }),
     resolvePermission(user.id, 'projects', 'edit'),
     resolvePermission(user.id, 'projects', 'delete'),
+    resolvePermission(user.id, 'projects.change-requests', 'change_status'),
   ])
 
   if (!project) notFound()
@@ -429,7 +440,18 @@ export default async function ProjectDetailPage({ params }: { params: PageParams
           createdAt: d.createdAt.toISOString(),
           uploadedBy: d.uploadedBy,
         }))}
+        changeRequests={project.changeRequests.map((cr) => ({
+          id:            cr.id,
+          title:         cr.title,
+          status:        cr.status,
+          priority:      cr.priority,
+          type:          cr.type,
+          requesterName: cr.requesterName,
+          assignedTo:    cr.assignedTo ?? null,
+          createdAt:     cr.createdAt.toISOString(),
+        }))}
         canEdit={canEdit}
+        canManageChanges={canManageChanges}
       />
     </div>
   )
