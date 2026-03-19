@@ -160,3 +160,7 @@ src/
 - Conventional commits: `feat(projects):`, `fix(auth):`, `refactor(permissions):`.
 - Commit after each completed task step.
 - Branch per feature: `feat/project-crud`, `feat/credential-vault`, `feat/kanban-board`.
+
+## Git Author
+- ALL commits must use the project's git config author, never Claude's identity.
+- Before committing, never override git user.name or user.email.
