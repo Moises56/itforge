@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create:*)",
+      "Read(//c/Users/GIS-MOISES/Desktop/New-Proyectos/**)",
+      "Bash(cp -r itforge-tmp/. itforge/ --exclude=\".git\")",
+      "Bash(rsync -av --exclude=\".git\" itforge-tmp/ itforge/)",
+      "Bash(cp -r itforge-tmp/node_modules itforge/)",
+      "Bash(cp itforge-tmp/package.json itforge/)",
+      "Bash(cp itforge-tmp/pnpm-lock.yaml itforge/)",
+      "Bash(cp -r itforge-tmp/src itforge/)",
+      "Bash(cp itforge-tmp/tsconfig.json itforge/)",
+      "Bash(cp itforge-tmp/public/file.svg itforge/public/)",
+      "Bash(cp itforge-tmp/public/globe.svg itforge/public/)",
+      "Bash(cp itforge-tmp/public/next.svg itforge/public/)",
+      "Bash(cp itforge-tmp/public/vercel.svg itforge/public/)",
+      "Bash(cp itforge-tmp/public/window.svg itforge/public/)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm prisma:*)",
+      "Bash(for dir:*)",
+      "Bash(do)",
+      "Bash(touch \"$dir/.gitkeep\")",
+      "Bash(pnpm typecheck:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge-tmp"
+    ]
+  }
+}
