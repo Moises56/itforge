@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { ExternalLink, Eye, User } from 'lucide-react'
 import { BadgeControlLevel, ControlLevelStripe } from './badge-control-level'

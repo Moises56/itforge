@@ -433,7 +433,6 @@ function ProjectTableView({ projects }: { projects: ProjectRow[] }) {
                         background: 'rgba(16,185,129,0.08)',
                         border: '1px solid rgba(16,185,129,0.2)',
                       }}
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink size={10} />
                       Sitio
