@@ -13,16 +13,158 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum PermissionModule {
+  DEVELOPMENT
+  INFRASTRUCTURE
+  SUPPORT
+  SYSTEM
+
+  @@map("permission_module")
+}
+
+enum ControlLevel {
+  LEVEL_0
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+
+  @@map("control_level")
+}
+
+enum DeploymentType {
+  WEB
+  DESKTOP
+  SERVICE
+  MOBILE
+
+  @@map("deployment_type")
+}
+
+enum ProjectStatus {
+  IDEA
+  PLANNING
+  DEVELOPMENT
+  QA
+  PRODUCTION
+  SUSPENDED
+  DISCONTINUED
+
+  @@map("project_status")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("priority")
+}
+
+enum EnvironmentType {
+  DEV
+  STAGING
+  PRODUCTION
+
+  @@map("environment_type")
+}
+
+enum CredentialType {
+  DATABASE
+  SSH
+  API_KEY
+  ADMIN_ACCESS
+  OTHER
+
+  @@map("credential_type")
+}
+
+enum TechStackCategory {
+  LANGUAGE
+  FRAMEWORK
+  DATABASE_ENGINE
+  TOOL
+  OTHER
+
+  @@map("tech_stack_category")
+}
+
+enum ProjectRelationType {
+  DEPENDS_ON
+  EXTENDS
+  REPLACES
+  SHARES_DATABASE
+
+  @@map("project_relation_type")
+}
+
+enum DocumentType {
+  SCREENSHOT
+  TECHNICAL_DOC
+  USER_MANUAL
+  ARCHITECTURE_DIAGRAM
+  CONFIG_FILE
+  OTHER
+
+  @@map("document_type")
+}
+
+enum ChangeRequestType {
+  NEW_FEATURE
+  MODIFICATION
+  BUG_FIX
+  DATA_CORRECTION
+  REPORT
+  VISUAL_CHANGE
+  OTHER
+
+  @@map("change_request_type")
+}
+
+enum ChangeRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("change_request_status")
+}
+
+enum DatabaseEngine {
+  POSTGRESQL
+  MYSQL
+  SQL_SERVER
+  MONGODB
+  SQLITE
+  OTHER
+
+  @@map("database_engine")
+}
+
+enum DatabaseManagedBy {
+  DBA_TEAM
+  DEV_TEAM
+  EXTERNAL
+
+  @@map("database_managed_by")
+}
+
 // ─── Organization (top-level tenant) ─────────────────────────────────────────
 
 model Organization {
-  id             String    @id @default(uuid())
+  id             String  @id @default(uuid())
   name           String
-  slug           String    @unique
-  logoPath       String?   @map("logo_path")
-  primaryColor   String?   @map("primary_color")
-  secondaryColor String?   @map("secondary_color")
-  faviconPath    String?   @map("favicon_path")
+  slug           String  @unique
+  logoPath       String? @map("logo_path")
+  primaryColor   String? @map("primary_color")
+  secondaryColor String? @map("secondary_color")
+  faviconPath    String? @map("favicon_path")
+  config         Json?
 
   // Feature flags
   developmentEnabled    Boolean @default(true)  @map("development_enabled")
@@ -33,36 +175,74 @@ model Organization {
   updatedAt DateTime  @updatedAt      @map("updated_at")
   deletedAt DateTime?                 @map("deleted_at")
 
-  users    User[]
-  roles    Role[]
-  sessions Session[]
+  users       User[]
+  roles       Role[]
+  sessions    Session[]
+  departments Department[]
+  resources   Resource[]
+  projects    Project[]
+  databases   Database[]
 
   @@map("organizations")
 }
 
-// ─── Users & Auth ─────────────────────────────────────────────────────────────
+// ─── Department ───────────────────────────────────────────────────────────────
 
-model User {
-  id             String    @id @default(uuid())
-  organizationId String    @map("organization_id")
-  email          String
-  passwordHash   String    @map("password_hash")
-  firstName      String    @map("first_name")
-  lastName       String    @map("last_name")
-  isActive       Boolean   @default(true) @map("is_active")
+model Department {
+  id             String  @id @default(uuid())
+  organizationId String  @map("organization_id")
+  name           String
+  code           String  @map("code")
+  parentId       String? @map("parent_id")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt      @map("updated_at")
   deletedAt DateTime?                 @map("deleted_at")
 
-  organization    Organization     @relation(fields: [organizationId], references: [id])
-  sessions        Session[]
-  userRoles       UserRole[]
-  userPermissions UserPermission[]
-  loginAttempts   LoginAttempt[]
-  auditLogs       AuditLog[]
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  parent       Department?   @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children     Department[]  @relation("DepartmentHierarchy")
+  users        User[]
+  usages       DepartmentUsage[]
+  changeRequests ChangeRequest[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("departments")
+}
+
+// ─── Users & Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  id             String  @id @default(uuid())
+  organizationId String  @map("organization_id")
+  departmentId   String? @map("department_id")
+  email          String
+  passwordHash   String  @map("password_hash")
+  firstName      String  @map("first_name")
+  lastName       String  @map("last_name")
+  isActive       Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization            Organization             @relation(fields: [organizationId], references: [id])
+  department              Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  sessions                Session[]
+  userRoles               UserRole[]
+  userPermissionOverrides UserPermissionOverride[]
+  loginAttempts           LoginAttempt[]
+  auditLogs               AuditLog[]
+  responsibleProjects     Project[]                @relation("ProjectResponsible")
+  assignedChangeRequests  ChangeRequest[]          @relation("ChangeRequestAssignee")
+  requestedChangeRequests ChangeRequest[]          @relation("ChangeRequestRequester")
+  changeRequestComments   ChangeRequestComment[]
+  uploadedDocuments       ProjectDocument[]
+  uploadedAttachments     ChangeRequestAttachment[]
 
   @@unique([organizationId, email])
+  @@index([organizationId])
   @@map("users")
 }
 
@@ -80,6 +260,7 @@ model Session {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id])
 
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -91,18 +272,69 @@ model LoginAttempt {
   successful Boolean
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user User? @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([email])
+  @@index([ipAddress])
   @@map("login_attempts")
 }
 
 // ─── RBAC ─────────────────────────────────────────────────────────────────────
+
+model Resource {
+  id             String           @id @default(uuid())
+  organizationId String?          @map("organization_id")
+  code           String           @unique
+  name           String
+  module         PermissionModule
+  sortOrder      Int              @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  organization    Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  resourceActions ResourceAction[]
+
+  @@index([module])
+  @@map("resources")
+}
+
+model Action {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  isUniversal Boolean @default(false) @map("is_universal")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  resourceActions ResourceAction[]
+
+  @@map("actions")
+}
+
+model ResourceAction {
+  id         String @id @default(uuid())
+  resourceId String @map("resource_id")
+  actionId   String @map("action_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  resource               Resource                 @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  action                 Action                   @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  rolePermissions        RolePermission[]
+  userPermissionOverrides UserPermissionOverride[]
+
+  @@unique([resourceId, actionId])
+  @@map("resource_actions")
+}
 
 model Role {
   id             String  @id @default(uuid())
   organizationId String  @map("organization_id")
   name           String
   description    String?
+  isSystem       Boolean @default(false) @map("is_system")
   isDefault      Boolean @default(false) @map("is_default")
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -114,6 +346,7 @@ model Role {
   rolePermissions RolePermission[]
 
   @@unique([organizationId, name])
+  @@index([organizationId])
   @@map("roles")
 }
 
@@ -132,32 +365,33 @@ model UserRole {
 }
 
 model RolePermission {
-  id       String @id @default(uuid())
-  roleId   String @map("role_id")
-  resource String
-  action   String
+  id               String  @id @default(uuid())
+  roleId           String  @map("role_id")
+  resourceActionId String  @map("resource_action_id")
+  allowed          Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role           Role           @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  resourceAction ResourceAction @relation(fields: [resourceActionId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, resource, action])
+  @@unique([roleId, resourceActionId])
   @@map("role_permissions")
 }
 
-model UserPermission {
-  id       String  @id @default(uuid())
-  userId   String  @map("user_id")
-  resource String
-  action   String
-  granted  Boolean @default(true)
+model UserPermissionOverride {
+  id               String  @id @default(uuid())
+  userId           String  @map("user_id")
+  resourceActionId String  @map("resource_action_id")
+  allowed          Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceAction ResourceAction @relation(fields: [resourceActionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, resource, action])
-  @@map("user_permissions")
+  @@unique([userId, resourceActionId])
+  @@map("user_permission_overrides")
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────
@@ -175,5 +409,297 @@ model AuditLog {
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([resource, resourceId])
   @@map("audit_logs")
+}
+
+// ─── Module: Development — Projects ──────────────────────────────────────────
+
+model Project {
+  id               String         @id @default(uuid())
+  organizationId   String         @map("organization_id")
+  name             String
+  code             String
+  description      String?
+  controlLevel     ControlLevel   @map("control_level")
+  deploymentType   DeploymentType @map("deployment_type")
+  status           ProjectStatus  @default(PLANNING)
+  priority         Priority       @default(MEDIUM)
+  hasSourceCode    Boolean        @default(false) @map("has_source_code")
+  repositoryUrl    String?        @map("repository_url")
+  sourceCodePath   String?        @map("source_code_path")
+  responsibleUserId String?       @map("responsible_user_id")
+  notes            String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  responsibleUser  User?             @relation("ProjectResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  environments     ProjectEnvironment[]
+  credentials      ProjectCredential[]
+  projectRoles     ProjectRole[]
+  departmentUsages DepartmentUsage[]
+  techStack        TechStack[]
+  sourceRelations  ProjectRelation[] @relation("ProjectRelationSource")
+  targetRelations  ProjectRelation[] @relation("ProjectRelationTarget")
+  documents        ProjectDocument[]
+  changeRequests   ChangeRequest[]
+  databases        Database[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectEnvironment {
+  id        String          @id @default(uuid())
+  projectId String          @map("project_id")
+  type      EnvironmentType
+  serverIp  String?         @map("server_ip")
+  serverPort Int?           @map("server_port")
+  url       String?
+  uncPath   String?         @map("unc_path")
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  credentials ProjectCredential[]
+
+  @@unique([projectId, type])
+  @@index([projectId])
+  @@map("project_environments")
+}
+
+model ProjectCredential {
+  id             String         @id @default(uuid())
+  projectId      String         @map("project_id")
+  environmentId  String?        @map("environment_id")
+  label          String
+  type           CredentialType
+  username       String?
+  encryptedValue String         @map("encrypted_value")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  environment ProjectEnvironment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@map("project_credentials")
+}
+
+model ProjectRole {
+  id          String  @id @default(uuid())
+  projectId   String  @map("project_id")
+  roleName    String  @map("role_name")
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_roles")
+}
+
+model DepartmentUsage {
+  id               String  @id @default(uuid())
+  projectId        String  @map("project_id")
+  departmentId     String  @map("department_id")
+  estimatedUsers   Int?    @map("estimated_users")
+  contactPerson    String? @map("contact_person")
+  notes            String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, departmentId])
+  @@index([projectId])
+  @@map("department_usages")
+}
+
+model TechStack {
+  id        String            @id @default(uuid())
+  projectId String            @map("project_id")
+  category  TechStackCategory
+  name      String
+  version   String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("tech_stacks")
+}
+
+model ProjectRelation {
+  id              String             @id @default(uuid())
+  sourceProjectId String             @map("source_project_id")
+  targetProjectId String             @map("target_project_id")
+  type            ProjectRelationType
+  notes           String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  sourceProject Project @relation("ProjectRelationSource", fields: [sourceProjectId], references: [id], onDelete: Cascade)
+  targetProject Project @relation("ProjectRelationTarget", fields: [targetProjectId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceProjectId, targetProjectId, type])
+  @@index([sourceProjectId])
+  @@index([targetProjectId])
+  @@map("project_relations")
+}
+
+model ProjectDocument {
+  id           String       @id @default(uuid())
+  projectId    String       @map("project_id")
+  title        String
+  type         DocumentType
+  filePath     String       @map("file_path")
+  fileSize     Int?         @map("file_size")
+  mimeType     String?      @map("mime_type")
+  uploadedById String?      @map("uploaded_by_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@map("project_documents")
+}
+
+// ─── Module: Development — Change Requests ───────────────────────────────────
+
+model ChangeRequest {
+  id                    String              @id @default(uuid())
+  projectId             String              @map("project_id")
+  title                 String
+  description           String?
+  requestedById         String?             @map("requested_by_id")
+  requesterName         String              @map("requester_name")
+  requesterDepartmentId String?             @map("requester_department_id")
+  type                  ChangeRequestType
+  priority              Priority            @default(MEDIUM)
+  status                ChangeRequestStatus @default(REQUESTED)
+  assignedToId          String?             @map("assigned_to_id")
+  rejectionReason       String?             @map("rejection_reason")
+  completionNotes       String?             @map("completion_notes")
+  startedAt             DateTime?           @map("started_at")
+  completedAt           DateTime?           @map("completed_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  project              Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedBy          User?                     @relation("ChangeRequestRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  requesterDepartment  Department?               @relation(fields: [requesterDepartmentId], references: [id], onDelete: SetNull)
+  assignedTo           User?                     @relation("ChangeRequestAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments             ChangeRequestComment[]
+  attachments          ChangeRequestAttachment[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([assignedToId])
+  @@map("change_requests")
+}
+
+model ChangeRequestComment {
+  id              String @id @default(uuid())
+  changeRequestId String @map("change_request_id")
+  userId          String @map("user_id")
+  content         String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  changeRequest ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([changeRequestId])
+  @@map("change_request_comments")
+}
+
+model ChangeRequestAttachment {
+  id              String  @id @default(uuid())
+  changeRequestId String  @map("change_request_id")
+  filePath        String  @map("file_path")
+  fileName        String  @map("file_name")
+  fileSize        Int?    @map("file_size")
+  mimeType        String? @map("mime_type")
+  uploadedById    String? @map("uploaded_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  changeRequest ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  uploadedBy    User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([changeRequestId])
+  @@map("change_request_attachments")
+}
+
+// ─── Module: Development — Databases ─────────────────────────────────────────
+
+model Database {
+  id             String            @id @default(uuid())
+  organizationId String            @map("organization_id")
+  projectId      String?           @map("project_id")
+  name           String
+  engine         DatabaseEngine
+  version        String?
+  serverIp       String?           @map("server_ip")
+  port           Int?
+  databaseName   String?           @map("database_name")
+  managedBy      DatabaseManagedBy @map("managed_by")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  project      Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  credentials  DatabaseCredential[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@map("databases")
+}
+
+model DatabaseCredential {
+  id             String  @id @default(uuid())
+  databaseId     String  @map("database_id")
+  label          String
+  username       String
+  encryptedValue String  @map("encrypted_value")
+  accessLevel    String? @map("access_level")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@index([databaseId])
+  @@map("database_credentials")
 }
