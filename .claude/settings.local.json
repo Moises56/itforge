@@ -20,7 +20,8 @@
       "Bash(for dir:*)",
       "Bash(do)",
       "Bash(touch \"$dir/.gitkeep\")",
-      "Bash(pnpm typecheck:*)"
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm db:push)"
     ],
     "additionalDirectories": [
       "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge-tmp"

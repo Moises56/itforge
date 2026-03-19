@@ -111,6 +111,59 @@ Todas las relaciones con onDelete apropiado (Cascade, SetNull, Restrict según e
 Haz commit: "feat(db): complete Prisma schema with all entities and relations"
 ```
 
+
+```
+promt 1A actualizado:
+Lee el CLAUDE.md completo y revisa el schema de Prisma actual en prisma/schema.prisma.
+EXTIENDE el schema existente (no lo reescribas desde cero, conserva lo que ya existe y agrégale lo que falta) con TODAS las entidades que falten:
+
+Revisa qué ya existe y solo agrega lo que falta de esta lista:
+
+CORE (si falta algo):
+- Organization: slug, logo, primaryColor, secondaryColor, favicon, config (Json)
+- Department: organizationId, name, code, parentId (self-relation jerárquica)
+
+PERMISOS (si falta algo):
+- Resource: code (unique), name, module (enum: DEVELOPMENT, INFRASTRUCTURE, SUPPORT, SYSTEM), sortOrder
+- Action: code (unique), name, isUniversal
+- ResourceAction: resourceId, actionId
+- Role: organizationId, name, description, isSystem, isDefault
+- RolePermission: roleId, resourceActionId, allowed
+- UserRole: userId, roleId (many-to-many)
+- UserPermissionOverride: userId, resourceActionId, allowed
+
+MÓDULO DESARROLLO:
+- Project: organizationId, name, code (unique por org), description, controlLevel (enum: LEVEL_0, LEVEL_1, LEVEL_2, LEVEL_3), deploymentType (enum: WEB, DESKTOP, SERVICE, MOBILE), status (enum: IDEA, PLANNING, DEVELOPMENT, QA, PRODUCTION, SUSPENDED, DISCONTINUED), hasSourceCode, repositoryUrl, sourceCodePath, priority (enum: LOW, MEDIUM, HIGH, CRITICAL), responsibleUserId
+- ProjectEnvironment: projectId, type (enum: DEV, STAGING, PRODUCTION), serverIp, serverPort, url, uncPath, notes
+- ProjectCredential: projectId, environmentId (nullable), label, type (enum: DATABASE, SSH, API_KEY, ADMIN_ACCESS, OTHER), username, encryptedValue, notes
+- ProjectRole: projectId, roleName, description
+- DepartmentUsage: projectId, departmentId, estimatedUsers, contactPerson, notes
+- TechStack: projectId, category (enum: LANGUAGE, FRAMEWORK, DATABASE_ENGINE, TOOL, OTHER), name, version
+- ProjectRelation: sourceProjectId, targetProjectId, type (enum: DEPENDS_ON, EXTENDS, REPLACES, SHARES_DATABASE), notes
+- ProjectDocument: projectId, title, type (enum: SCREENSHOT, TECHNICAL_DOC, USER_MANUAL, ARCHITECTURE_DIAGRAM, CONFIG_FILE, OTHER), filePath, fileSize, mimeType, uploadedById
+
+CHANGE REQUESTS:
+- ChangeRequest: projectId, title, description, requestedById (nullable), requesterName, requesterDepartmentId, type (enum: NEW_FEATURE, MODIFICATION, BUG_FIX, DATA_CORRECTION, REPORT, VISUAL_CHANGE, OTHER), priority (enum), status (enum: REQUESTED, UNDER_REVIEW, APPROVED, REJECTED, IN_PROGRESS, COMPLETED, CANCELLED), assignedToId, rejectionReason, completionNotes, startedAt, completedAt
+- ChangeRequestComment: changeRequestId, userId, content
+- ChangeRequestAttachment: changeRequestId, filePath, fileName, fileSize, mimeType, uploadedById
+
+BASES DE DATOS:
+- Database: organizationId, projectId (nullable), name, engine (enum: POSTGRESQL, MYSQL, SQL_SERVER, MONGODB, SQLITE, OTHER), version, serverIp, port, databaseName, managedBy (enum: DBA_TEAM, DEV_TEAM, EXTERNAL), notes
+- DatabaseCredential: databaseId, label, username, encryptedValue, accessLevel
+
+Cada tabla con id UUID, createdAt, updatedAt. Soft delete (deletedAt) donde tenga sentido.
+Índices en organizationId, projectId, status, code.
+Unique constraints donde corresponda.
+Relaciones con onDelete apropiado (Cascade, SetNull, Restrict según el caso).
+Usa enums de Prisma.
+
+Después de actualizar el schema, ejecuta pnpm db:push para verificar que no hay errores.
+Haz commit: "feat(db): complete Prisma schema with all project entities"
+
+```
+
+
+
 ### Prompt 1B — Sistema de Autenticación
 
 ```
