@@ -8,6 +8,7 @@ export const BUCKETS = {
   dev:     'dev-assets',
   infra:   'infra-assets',
   support: 'support-assets',
+  system:  'system-assets',
 } as const
 
 export type StorageBucket = (typeof BUCKETS)[keyof typeof BUCKETS]

@@ -31,7 +31,8 @@
     ],
     "additionalDirectories": [
       "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge-tmp",
-      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge\\src\\app\\(dashboard)\\admin\\roles\\[id]"
+      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge\\src\\app\\(dashboard)\\admin\\roles\\[id]",
+      "c:\\Users\\GIS-MOISES\\Desktop\\New-Proyectos\\itforge\\src\\app\\(dashboard)\\admin\\users\\[id]"
     ]
   }
 }

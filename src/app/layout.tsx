@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Rajdhani, Barlow, JetBrains_Mono } from 'next/font/google'
+import { getPublicOrgMeta } from '@/core/config/get-public-org-meta'
 import './globals.css'
 
 const rajdhani = Rajdhani({
@@ -22,12 +23,19 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: {
-    template: `%s | ${process.env.NEXT_PUBLIC_APP_NAME ?? 'ITForge'}`,
-    default: process.env.NEXT_PUBLIC_APP_NAME ?? 'ITForge',
-  },
-  description: 'Sistema de Gestión de Portafolio TI',
+export async function generateMetadata(): Promise<Metadata> {
+  const meta = await getPublicOrgMeta()
+
+  return {
+    title: {
+      template: `%s | ${meta.name}`,
+      default: meta.name,
+    },
+    description: 'Sistema de Gestión de Portafolio TI',
+    icons: meta.hasFavicon
+      ? { icon: '/api/org/favicon', shortcut: '/api/org/favicon' }
+      : undefined,
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

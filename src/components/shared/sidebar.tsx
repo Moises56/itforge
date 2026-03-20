@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   Layers,
@@ -15,6 +16,8 @@ import {
   X,
   ChevronRight,
   Home,
+  Server,
+  LifeBuoy,
 } from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/login/actions'
 
@@ -26,6 +29,12 @@ interface NavItem {
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
 }
 
+interface EnabledModules {
+  development: boolean
+  infrastructure: boolean
+  support: boolean
+}
+
 interface SidebarProps {
   user: {
     firstName: string
@@ -33,58 +42,76 @@ interface SidebarProps {
     roles: string[]
   }
   canViewAdmin: boolean
+  orgName: string
+  orgTagline: string
+  orgLogoUrl: string | null
+  enabledModules: EnabledModules
 }
 
 // ─── Navigation config ─────────────────────────────────────────────────────
 
 const devNavItems: NavItem[] = [
-  { label: 'Inicio', href: '/', icon: Home },
-  { label: 'Proyectos', href: '/projects', icon: Layers },
-  { label: 'Solicitudes de Cambio', href: '/change-requests', icon: GitPullRequest },
-  { label: 'Bases de Datos', href: '/databases', icon: Database },
+  { label: 'Inicio',               href: '/',               icon: Home },
+  { label: 'Proyectos',            href: '/projects',        icon: Layers },
+  { label: 'Solicitudes de Cambio',href: '/change-requests', icon: GitPullRequest },
+  { label: 'Bases de Datos',       href: '/databases',       icon: Database },
+]
+
+const infraNavItems: NavItem[] = [
+  { label: 'Servidores',  href: '/infrastructure/servers',  icon: Server },
+]
+
+const supportNavItems: NavItem[] = [
+  { label: 'Soporte', href: '/support', icon: LifeBuoy },
 ]
 
 const adminNavItems: NavItem[] = [
-  { label: 'Usuarios', href: '/admin/users', icon: Users },
-  { label: 'Roles', href: '/admin/roles', icon: Shield },
+  { label: 'Usuarios',      href: '/admin/users',    icon: Users },
+  { label: 'Roles',         href: '/admin/roles',    icon: Shield },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ]
 
 // ─── Sidebar Logo ───────────────────────────────────────────────────────────
 
-function SidebarLogo() {
+function SidebarLogo({ orgName, orgTagline, orgLogoUrl }: { orgName: string; orgTagline: string; orgLogoUrl: string | null }) {
   return (
     <div className="h-14 flex items-center px-4 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
-      <div className="flex items-center gap-2.5">
-        {/* Hex icon — two overlapping squares rotated 45deg */}
-        <div
-          className="relative w-7 h-7 flex items-center justify-center"
-          style={{
-            background: 'var(--accent-glow)',
-            border: '1px solid var(--border-bright)',
-            clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-          }}
-        >
-          <span
-            className="text-[9px] font-heading font-bold tracking-wider select-none"
-            style={{ color: 'var(--accent-cyan)' }}
+      <div className="flex items-center gap-2.5 min-w-0">
+        {/* Logo image or hex fallback */}
+        {orgLogoUrl ? (
+          <div className="w-7 h-7 shrink-0 rounded overflow-hidden flex items-center justify-center">
+            <Image src={orgLogoUrl} alt={orgName} width={28} height={28} className="object-contain" unoptimized />
+          </div>
+        ) : (
+          <div
+            className="relative w-7 h-7 shrink-0 flex items-center justify-center"
+            style={{
+              background: 'var(--accent-glow)',
+              border: '1px solid var(--border-bright)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+            }}
           >
-            IT
-          </span>
-        </div>
+            <span
+              className="text-[9px] font-heading font-bold tracking-wider select-none"
+              style={{ color: 'var(--accent-cyan)' }}
+            >
+              {orgName.slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+        )}
 
-        <div className="flex flex-col leading-none">
+        <div className="flex flex-col leading-none min-w-0">
           <span
-            className="font-heading font-bold text-base tracking-[0.18em] uppercase select-none"
+            className="font-heading font-bold text-base tracking-[0.14em] uppercase select-none truncate"
             style={{ color: 'var(--foreground)' }}
           >
-            ITForge
+            {orgName}
           </span>
           <span
             className="text-[9px] tracking-[0.2em] uppercase select-none"
             style={{ color: 'var(--foreground-muted)', fontFamily: 'var(--font-jetbrains)' }}
           >
-            Portfolio TI
+            {orgTagline}
           </span>
         </div>
       </div>
@@ -128,22 +155,15 @@ function NavSection({
               onClick={onNavigate}
               className="group flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-all duration-150 border-l-2"
               style={{
-                color: active ? 'var(--accent-cyan)' : 'var(--foreground-muted)',
-                background: active ? 'var(--accent-glow)' : 'transparent',
-                borderLeftColor: active ? 'var(--accent)' : 'transparent',
+                color:           active ? 'var(--accent-cyan)' : 'var(--foreground-muted)',
+                background:      active ? 'var(--accent-glow)' : 'transparent',
+                borderLeftColor: active ? 'var(--accent)'      : 'transparent',
               }}
             >
-              <Icon
-                size={15}
-                strokeWidth={1.75}
-              />
+              <Icon size={15} strokeWidth={1.75} />
               <span className="flex-1 font-medium tracking-wide truncate">{item.label}</span>
               {active && (
-                <ChevronRight
-                  size={11}
-                  strokeWidth={2.5}
-                  style={{ color: 'var(--accent)' }}
-                />
+                <ChevronRight size={11} strokeWidth={2.5} style={{ color: 'var(--accent)' }} />
               )}
             </Link>
           )
@@ -224,25 +244,42 @@ function UserFooter({ user }: { user: SidebarProps['user'] }) {
 function SidebarContent({
   user,
   canViewAdmin,
+  orgName,
+  orgTagline,
+  orgLogoUrl,
+  enabledModules,
   isActive,
   onNavigate,
-}: {
-  user: SidebarProps['user']
-  canViewAdmin: boolean
-  isActive: (href: string) => boolean
-  onNavigate: () => void
-}) {
+}: SidebarProps & { isActive: (href: string) => boolean; onNavigate: () => void }) {
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--surface)' }}>
-      <SidebarLogo />
+      <SidebarLogo orgName={orgName} orgTagline={orgTagline} orgLogoUrl={orgLogoUrl} />
 
       <nav className="flex-1 px-2 py-4 space-y-5 overflow-y-auto">
-        <NavSection
-          title="Desarrollo"
-          items={devNavItems}
-          isActive={isActive}
-          onNavigate={onNavigate}
-        />
+        {enabledModules.development && (
+          <NavSection
+            title="Desarrollo"
+            items={devNavItems}
+            isActive={isActive}
+            onNavigate={onNavigate}
+          />
+        )}
+        {enabledModules.infrastructure && (
+          <NavSection
+            title="Infraestructura"
+            items={infraNavItems}
+            isActive={isActive}
+            onNavigate={onNavigate}
+          />
+        )}
+        {enabledModules.support && (
+          <NavSection
+            title="Soporte"
+            items={supportNavItems}
+            isActive={isActive}
+            onNavigate={onNavigate}
+          />
+        )}
         {canViewAdmin && (
           <NavSection
             title="Administración"
@@ -260,7 +297,7 @@ function SidebarContent({
 
 // ─── Main Sidebar Export ────────────────────────────────────────────────────
 
-export function Sidebar({ user, canViewAdmin }: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -310,12 +347,7 @@ export function Sidebar({ user, canViewAdmin }: SidebarProps) {
         >
           <X size={15} />
         </button>
-        <SidebarContent
-          user={user}
-          canViewAdmin={canViewAdmin}
-          isActive={isActive}
-          onNavigate={closeMobile}
-        />
+        <SidebarContent {...props} isActive={isActive} onNavigate={closeMobile} />
       </div>
 
       {/* ── Desktop sidebar ── */}
@@ -323,12 +355,7 @@ export function Sidebar({ user, canViewAdmin }: SidebarProps) {
         className="hidden md:flex flex-col w-60 shrink-0 border-r"
         style={{ borderColor: 'var(--border)' }}
       >
-        <SidebarContent
-          user={user}
-          canViewAdmin={canViewAdmin}
-          isActive={isActive}
-          onNavigate={() => {}}
-        />
+        <SidebarContent {...props} isActive={isActive} onNavigate={() => {}} />
       </aside>
     </>
   )

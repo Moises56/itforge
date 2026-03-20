@@ -160,10 +160,13 @@ model Organization {
   id             String  @id @default(uuid())
   name           String
   slug           String  @unique
+  tagline        String?
   logoPath       String? @map("logo_path")
   primaryColor   String? @map("primary_color")
   secondaryColor String? @map("secondary_color")
+  accentColor    String? @map("accent_color")
   faviconPath    String? @map("favicon_path")
+  terminology    Json?
   config         Json?
 
   // Feature flags
