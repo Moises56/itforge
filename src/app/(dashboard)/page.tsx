@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/core/auth/get-current-user'
 import { prisma } from '@/lib/prisma'
-import { ArrowRight, AlertTriangle, AlertCircle, Clock, TrendingUp } from 'lucide-react'
+import { ArrowRight, AlertTriangle, AlertCircle, Clock, TrendingUp, Database } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -61,6 +61,7 @@ async function getDashboardData(organizationId: string) {
     noDocCount,
     level0NoOwnerCount,
     totalProjects,
+    totalDatabases,
   ] = await Promise.all([
     // Projects grouped by status
     prisma.project.groupBy({
@@ -112,6 +113,9 @@ async function getDashboardData(organizationId: string) {
 
     // Total projects
     prisma.project.count({ where: baseWhere }),
+
+    // Total databases
+    prisma.database.count({ where: { organizationId, deletedAt: null } }),
   ])
 
   // Build a status → count map
@@ -123,6 +127,7 @@ async function getDashboardData(organizationId: string) {
 
   return {
     totalProjects,
+    totalDatabases,
     inProduction:  sc('PRODUCTION'),
     inDevelopment: sc('DEVELOPMENT') + sc('QA') + sc('PLANNING'),
     inIdea:        sc('IDEA'),
@@ -322,6 +327,29 @@ export default async function DashboardPage() {
           href="/projects"
         />
       </div>
+
+      {/* ── Databases mini-card ── */}
+      <Link href="/databases" className="block">
+        <div
+          className="flex items-center gap-4 rounded px-5 py-3 transition-all group"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <Database size={16} style={{ color: 'var(--accent-cyan)', flexShrink: 0 }} />
+          <div className="flex-1">
+            <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+              {data.totalDatabases} base{data.totalDatabases !== 1 ? 's' : ''} de datos registrada{data.totalDatabases !== 1 ? 's' : ''}
+            </span>
+            <span className="text-xs ml-2" style={{ color: 'var(--foreground-muted)' }}>
+              en el inventario
+            </span>
+          </div>
+          <ArrowRight
+            size={14}
+            style={{ color: 'var(--accent-cyan)' }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+          />
+        </div>
+      </Link>
 
       {/* ── Pending CRs banner ── */}
       {data.pendingCRs > 0 && (
@@ -550,9 +578,10 @@ export default async function DashboardPage() {
 
             <div className="p-2">
               {[
-                { label: 'Nuevo proyecto', href: '/projects/new' },
-                { label: 'Nueva solicitud', href: '/change-requests/new' },
-                { label: 'Ver Kanban', href: '/change-requests' },
+                { label: 'Nuevo proyecto',   href: '/projects/new'      },
+                { label: 'Nueva base de datos', href: '/databases/new'  },
+                { label: 'Nueva solicitud',  href: '/change-requests/new' },
+                { label: 'Ver Kanban',       href: '/change-requests'   },
               ].map((link) => (
                 <Link
                   key={link.href}
