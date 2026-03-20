@@ -176,6 +176,53 @@ const RELATION_TYPES = [
   { value: 'SHARES_DATABASE', label: 'Comparte BD' },
 ]
 
+const RELATION_TYPE_CONFIG: Record<string, {
+  label:       string
+  outLabel:    string
+  inLabel:     string
+  description: string
+  color:       string
+  bg:          string
+  border:      string
+}> = {
+  DEPENDS_ON: {
+    label:       'Dependencias',
+    outLabel:    'Este proyecto depende de',
+    inLabel:     'Este proyecto es requerido por',
+    description: 'Sistemas de los que este proyecto necesita para funcionar',
+    color:       '#f59e0b',
+    bg:          'rgba(245,158,11,0.08)',
+    border:      'rgba(245,158,11,0.2)',
+  },
+  EXTENDS: {
+    label:       'Extensiones',
+    outLabel:    'Este proyecto extiende',
+    inLabel:     'Este proyecto es extendido por',
+    description: 'Este proyecto actúa como satélite que añade funcionalidad a otro sistema',
+    color:       '#3b82f6',
+    bg:          'rgba(59,130,246,0.08)',
+    border:      'rgba(59,130,246,0.2)',
+  },
+  REPLACES: {
+    label:       'Reemplazos',
+    outLabel:    'Este proyecto reemplaza',
+    inLabel:     'Este proyecto es reemplazado por',
+    description: 'Relación de sustitución entre sistemas legacy y nuevos',
+    color:       '#8b5cf6',
+    bg:          'rgba(139,92,246,0.08)',
+    border:      'rgba(139,92,246,0.2)',
+  },
+  SHARES_DATABASE: {
+    label:       'BD Compartida',
+    outLabel:    'Comparte base de datos con',
+    inLabel:     'Comparte base de datos con',
+    description: 'Múltiples sistemas leen/escriben la misma base de datos',
+    color:       '#06b6d4',
+    bg:          'rgba(6,182,212,0.08)',
+    border:      'rgba(6,182,212,0.2)',
+  },
+}
+
 const STATUS_COLORS: Record<string, string> = {
   PRODUCTION:   'var(--status-green)',
   QA:           'var(--status-blue)',
@@ -1573,40 +1620,27 @@ function RelationsTab({
     })
   }
 
-  const getRelationLabel = (type: string) => RELATION_TYPES.find((r) => r.value === type)?.label ?? type
-
   const RelationRow = ({
     relation,
     linkedProject,
-    direction,
+    canDelete,
   }: {
     relation: RelationItem
     linkedProject: { id: string; name: string; code: string; status: string }
-    direction: 'outgoing' | 'incoming'
+    canDelete: boolean
   }) => (
     <div
-      className="flex items-center gap-3 px-4 py-3 rounded"
+      className="flex items-center gap-3 px-3 py-2.5 rounded"
       style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
     >
-      <span
-        className="text-[10px] font-mono font-semibold uppercase px-1.5 py-0.5 rounded shrink-0"
-        style={{
-          background: direction === 'outgoing' ? 'rgba(6,182,212,0.1)' : 'rgba(139,92,246,0.1)',
-          color: direction === 'outgoing' ? 'var(--accent-cyan)' : '#a78bfa',
-          border: `1px solid ${direction === 'outgoing' ? 'rgba(6,182,212,0.2)' : 'rgba(139,92,246,0.2)'}`,
-          fontFamily: 'var(--font-jetbrains)',
-        }}
-      >
-        {getRelationLabel(relation.type)}
-      </span>
       <div className="flex-1 min-w-0">
         <Link
           href={`/projects/${linkedProject.id}`}
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 hover:underline group"
           style={{ color: 'var(--foreground)' }}
         >
           <span
-            className="text-xs font-mono"
+            className="text-xs font-mono shrink-0"
             style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-jetbrains)' }}
           >
             {linkedProject.code}
@@ -1614,18 +1648,18 @@ function RelationsTab({
           <span className="text-sm font-medium truncate">{linkedProject.name}</span>
         </Link>
         {relation.notes && (
-          <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+          <p className="text-xs mt-0.5 ml-0 truncate" style={{ color: 'var(--foreground-muted)' }}>
             {relation.notes}
           </p>
         )}
       </div>
       <span
-        className="text-[10px] shrink-0"
+        className="text-[10px] shrink-0 font-mono"
         style={{ color: STATUS_COLORS[linkedProject.status] ?? 'var(--foreground-dim)' }}
       >
         ● {linkedProject.status}
       </span>
-      {canEdit && direction === 'outgoing' && (
+      {canEdit && canDelete && (
         <IconBtn onClick={() => handleDelete(relation.id)} danger disabled={isPending} title="Eliminar relación">
           <Trash2 size={13} />
         </IconBtn>
@@ -1635,41 +1669,84 @@ function RelationsTab({
 
   const totalCount = sourceRelations.length + targetRelations.length
 
+  // Group by relation type
+  const outByType = RELATION_TYPES.reduce<Record<string, RelationItem[]>>((acc, t) => {
+    acc[t.value] = sourceRelations.filter((r) => r.type === t.value)
+    return acc
+  }, {})
+  const inByType = RELATION_TYPES.reduce<Record<string, RelationItem[]>>((acc, t) => {
+    acc[t.value] = targetRelations.filter((r) => r.type === t.value)
+    return acc
+  }, {})
+
+  const activeTypes = RELATION_TYPES.filter(
+    (t) => (outByType[t.value]?.length ?? 0) > 0 || (inByType[t.value]?.length ?? 0) > 0
+  )
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <InlineError error={error} />
 
       {totalCount === 0 && !adding && (
         <EmptyState message="No hay relaciones definidas para este proyecto." />
       )}
 
-      {sourceRelations.length > 0 && (
-        <div className="space-y-2">
-          <SectionLabel>Este proyecto → otros ({sourceRelations.length})</SectionLabel>
-          {sourceRelations.map((r) => r.targetProject && (
-            <RelationRow
-              key={r.id}
-              relation={r}
-              linkedProject={r.targetProject}
-              direction="outgoing"
-            />
-          ))}
-        </div>
-      )}
+      {activeTypes.map((t) => {
+        const cfg = RELATION_TYPE_CONFIG[t.value]!
+        const outs = outByType[t.value] ?? []
+        const ins  = inByType[t.value]  ?? []
+        return (
+          <div
+            key={t.value}
+            className="rounded overflow-hidden"
+            style={{ border: `1px solid ${cfg.border}` }}
+          >
+            {/* Type header */}
+            <div
+              className="px-4 py-2.5 flex items-center gap-3"
+              style={{ background: cfg.bg }}
+            >
+              <span
+                className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0"
+                style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}
+              >
+                {t.value.replace('_', ' ')}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
+                <span className="text-[11px] ml-2" style={{ color: 'var(--foreground-dim)' }}>{cfg.description}</span>
+              </div>
+              <span className="text-[10px] font-mono shrink-0" style={{ color: 'var(--foreground-dim)' }}>
+                {outs.length + ins.length} relación{outs.length + ins.length !== 1 ? 'es' : ''}
+              </span>
+            </div>
 
-      {targetRelations.length > 0 && (
-        <div className="space-y-2">
-          <SectionLabel>Otros → este proyecto ({targetRelations.length})</SectionLabel>
-          {targetRelations.map((r) => r.sourceProject && (
-            <RelationRow
-              key={r.id}
-              relation={r}
-              linkedProject={r.sourceProject}
-              direction="incoming"
-            />
-          ))}
-        </div>
-      )}
+            {/* Relations */}
+            <div className="p-3 space-y-3" style={{ background: 'var(--surface)' }}>
+              {outs.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wide" style={{ color: 'var(--foreground-dim)' }}>
+                    {cfg.outLabel}
+                  </p>
+                  {outs.map((r) => r.targetProject && (
+                    <RelationRow key={r.id} relation={r} linkedProject={r.targetProject} canDelete={true} />
+                  ))}
+                </div>
+              )}
+              {ins.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wide" style={{ color: 'var(--foreground-dim)' }}>
+                    {cfg.inLabel}
+                  </p>
+                  {ins.map((r) => r.sourceProject && (
+                    <RelationRow key={r.id} relation={r} linkedProject={r.sourceProject} canDelete={false} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
 
       {canEdit && !adding && (
         <AddButton onClick={() => setAdding(true)}>Agregar relación</AddButton>
@@ -1683,6 +1760,19 @@ function RelationsTab({
           <p className="text-xs font-semibold" style={{ color: 'var(--foreground-muted)' }}>
             Nueva relación
           </p>
+          {/* Type description hint */}
+          {newRelation.type && RELATION_TYPE_CONFIG[newRelation.type] && (
+            <p
+              className="text-[11px] px-3 py-2 rounded"
+              style={{
+                background: RELATION_TYPE_CONFIG[newRelation.type]!.bg,
+                color: RELATION_TYPE_CONFIG[newRelation.type]!.color,
+                border: `1px solid ${RELATION_TYPE_CONFIG[newRelation.type]!.border}`,
+              }}
+            >
+              {RELATION_TYPE_CONFIG[newRelation.type]!.description}
+            </p>
+          )}
           <div className="grid md:grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] font-medium mb-1" style={labelStyle}>Tipo de relación *</label>

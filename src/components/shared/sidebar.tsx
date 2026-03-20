@@ -18,6 +18,7 @@ import {
   Home,
   Server,
   LifeBuoy,
+  Network,
 } from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/login/actions'
 
@@ -51,10 +52,11 @@ interface SidebarProps {
 // ─── Navigation config ─────────────────────────────────────────────────────
 
 const devNavItems: NavItem[] = [
-  { label: 'Inicio',               href: '/',               icon: Home },
-  { label: 'Proyectos',            href: '/projects',        icon: Layers },
-  { label: 'Solicitudes de Cambio',href: '/change-requests', icon: GitPullRequest },
-  { label: 'Bases de Datos',       href: '/databases',       icon: Database },
+  { label: 'Inicio',               href: '/',                         icon: Home },
+  { label: 'Proyectos',            href: '/projects',                  icon: Layers },
+  { label: 'Dependencias',         href: '/projects/dependencies',     icon: Network },
+  { label: 'Solicitudes de Cambio',href: '/change-requests',           icon: GitPullRequest },
+  { label: 'Bases de Datos',       href: '/databases',                 icon: Database },
 ]
 
 const infraNavItems: NavItem[] = [
