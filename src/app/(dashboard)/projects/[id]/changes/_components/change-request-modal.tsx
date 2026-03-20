@@ -166,7 +166,7 @@ function ActionBtn({
 // ─── Timeline entry ───────────────────────────────────────────────────────────
 
 function TimelineEntry({ entry }: { entry: CRDetail['timeline'][number] }) {
-  const meta = entry.metadata
+  const meta = entry.metadata as Record<string, unknown>
   const from = meta.fromStatus as string | undefined
   const to   = meta.toStatus   as string | undefined
 
@@ -199,9 +199,9 @@ function TimelineEntry({ entry }: { entry: CRDetail['timeline'][number] }) {
           {' — '}
           {text}
         </p>
-        {meta.rejectionReason && (
+        {typeof meta.rejectionReason === 'string' && (
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
-            Motivo: {String(meta.rejectionReason)}
+            Motivo: {meta.rejectionReason}
           </p>
         )}
         <p className="text-[9px] mt-0.5" style={{ color: 'var(--foreground-dim)' }}>
@@ -634,7 +634,7 @@ function DetailView({
           <div className="space-y-3">
             {/* Type */}
             <div className="flex items-center gap-2">
-              <Tag size={12} style={{ color: 'var(--foreground-dim)', shrink: 0 }} />
+              <Tag size={12} style={{ color: 'var(--foreground-dim)', flexShrink: 0 }} />
               <div>
                 <p className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--foreground-dim)' }}>Tipo</p>
                 <p className="text-xs" style={{ color: 'var(--foreground)' }}>
@@ -913,7 +913,7 @@ function DetailView({
                   className="flex items-center gap-3 px-3 py-2 rounded"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
                 >
-                  <FileText size={14} style={{ color: 'var(--foreground-muted)', shrink: 0 }} />
+                  <FileText size={14} style={{ color: 'var(--foreground-muted)', flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{a.fileName}</p>
                     <p className="text-[9px]" style={{ color: 'var(--foreground-dim)' }}>
