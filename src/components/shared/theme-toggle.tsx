@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 
 export function ThemeToggle() {
-  // Always start as 'dark' to match SSR — avoids hydration mismatch.
-  // The inline script in layout.tsx already applied the correct class to <html>
-  // before the first paint, so there's no visual flash even though state lags.
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme]   = useState<'dark' | 'light'>('dark')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    // Sync with the class the beforeInteractive script applied
     const actual = document.documentElement.classList.contains('light') ? 'light' : 'dark'
     setTheme(actual)
     setMounted(true)
@@ -25,23 +23,21 @@ export function ThemeToggle() {
 
   return (
     <button
-      onClick={toggle}
+      onClick={mounted ? toggle : undefined}
       className="w-8 h-8 rounded flex items-center justify-center transition-colors"
       style={{
         background: 'var(--surface-2)',
         border: '1px solid var(--border)',
         color: 'var(--foreground-muted)',
       }}
-      // Suppress hydration warning: server always renders dark, client updates after mount
-      suppressHydrationWarning
-      title={mounted
-        ? (theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro')
-        : 'Tema'}
+      aria-label="Cambiar tema"
     >
-      {/* Use suppressHydrationWarning here too since icon changes after mount */}
-      <span suppressHydrationWarning>
-        {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-      </span>
+      {/*
+       * Render nothing until mounted.
+       * Server and client initial render are identical (no icon) so there
+       * is no hydration mismatch. After mount, the icon appears instantly.
+       */}
+      {mounted && (theme === 'dark' ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />)}
     </button>
   )
 }
