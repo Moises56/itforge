@@ -178,13 +178,17 @@ model Organization {
   updatedAt DateTime  @updatedAt      @map("updated_at")
   deletedAt DateTime?                 @map("deleted_at")
 
-  users       User[]
-  roles       Role[]
-  sessions    Session[]
-  departments Department[]
-  resources   Resource[]
-  projects    Project[]
-  databases   Database[]
+  users            User[]
+  roles            Role[]
+  sessions         Session[]
+  departments      Department[]
+  resources        Resource[]
+  projects         Project[]
+  databases        Database[]
+  serverGroups     ServerGroup[]
+  servers          Server[]
+  networkEquipment NetworkEquipment[]
+  domains          Domain[]
 
   @@map("organizations")
 }
@@ -243,6 +247,7 @@ model User {
   changeRequestComments   ChangeRequestComment[]
   uploadedDocuments       ProjectDocument[]
   uploadedAttachments     ChangeRequestAttachment[]
+  uploadedServerDocuments ServerDocument[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -451,6 +456,7 @@ model Project {
   documents        ProjectDocument[]
   changeRequests   ChangeRequest[]
   databases        Database[]
+  domains          Domain[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -705,4 +711,301 @@ model DatabaseCredential {
 
   @@index([databaseId])
   @@map("database_credentials")
+}
+
+// ─── Module: Infrastructure — Enums ──────────────────────────────────────────
+
+enum ServerOS {
+  WINDOWS_SERVER
+  UBUNTU
+  CENTOS
+  DEBIAN
+  RHEL
+  OTHER
+
+  @@map("server_os")
+}
+
+enum ServerType {
+  PHYSICAL
+  VIRTUAL
+  CONTAINER
+
+  @@map("server_type")
+}
+
+enum ServerStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+  DECOMMISSIONED
+
+  @@map("server_status")
+}
+
+enum ServerProtocol {
+  RDP
+  SSH
+  WEB_PANEL
+  IPMI
+  VNC
+  OTHER
+
+  @@map("server_protocol")
+}
+
+enum ServiceStatus {
+  RUNNING
+  STOPPED
+  UNKNOWN
+
+  @@map("service_status")
+}
+
+enum NetworkEquipmentType {
+  SWITCH
+  ROUTER
+  ACCESS_POINT
+  FIREWALL
+  UPS
+  OTHER
+
+  @@map("network_equipment_type")
+}
+
+enum NetworkEquipmentStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+
+  @@map("network_equipment_status")
+}
+
+enum NetworkProtocol {
+  SSH
+  WEB_PANEL
+  SNMP
+  OTHER
+
+  @@map("network_protocol")
+}
+
+enum DomainType {
+  INTERNAL
+  PUBLIC
+
+  @@map("domain_type")
+}
+
+// ─── Module: Infrastructure — Server Groups ───────────────────────────────────
+
+model ServerGroup {
+  id             String  @id @default(uuid())
+  organizationId String  @map("organization_id")
+  name           String
+  description    String?
+  parentId       String? @map("parent_id")
+  sortOrder      Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  parent       ServerGroup?  @relation("ServerGroupHierarchy", fields: [parentId], references: [id])
+  children     ServerGroup[] @relation("ServerGroupHierarchy")
+  servers      Server[]
+
+  @@index([organizationId])
+  @@map("server_groups")
+}
+
+// ─── Module: Infrastructure — Servers ────────────────────────────────────────
+
+model Server {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  groupId        String?      @map("group_id")
+  hostname       String
+  displayName    String?      @map("display_name")
+  description    String?
+  ip             String
+  secondaryIp    String?      @map("secondary_ip")
+  os             ServerOS
+  type           ServerType
+  specs          Json?
+  location       String?
+  domain         String?
+  status         ServerStatus @default(ACTIVE)
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization Organization       @relation(fields: [organizationId], references: [id])
+  group        ServerGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  credentials  ServerCredential[]
+  services     ServerService[]
+  documents    ServerDocument[]
+  domains      Domain[]
+
+  @@index([organizationId])
+  @@map("servers")
+}
+
+model ServerCredential {
+  id             String         @id @default(uuid())
+  serverId       String         @map("server_id")
+  label          String
+  protocol       ServerProtocol
+  port           Int?
+  username       String?
+  encryptedValue String         @map("encrypted_value")
+  domain         String?
+  isDefault      Boolean        @default(false) @map("is_default")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("server_credentials")
+}
+
+model ServerService {
+  id        String        @id @default(uuid())
+  serverId  String        @map("server_id")
+  name      String
+  port      Int?
+  protocol  String?
+  status    ServiceStatus @default(UNKNOWN)
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("server_services")
+}
+
+model ServerDocument {
+  id           String       @id @default(uuid())
+  serverId     String       @map("server_id")
+  title        String
+  type         DocumentType
+  filePath     String       @map("file_path")
+  fileSize     Int?         @map("file_size")
+  mimeType     String?      @map("mime_type")
+  uploadedById String?      @map("uploaded_by_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  server     Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  uploadedBy User?  @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([serverId])
+  @@map("server_documents")
+}
+
+// ─── Module: Infrastructure — Network Equipment ───────────────────────────────
+
+model NetworkEquipment {
+  id             String                 @id @default(uuid())
+  organizationId String                 @map("organization_id")
+  name           String
+  type           NetworkEquipmentType
+  brand          String?
+  model          String?
+  ip             String?
+  location       String?
+  managementUrl  String?                @map("management_url")
+  totalPorts     Int?                   @map("total_ports")
+  firmware       String?
+  status         NetworkEquipmentStatus @default(ACTIVE)
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization Organization                 @relation(fields: [organizationId], references: [id])
+  credentials  NetworkEquipmentCredential[]
+  ports        NetworkEquipmentPort[]
+
+  @@index([organizationId])
+  @@map("network_equipment")
+}
+
+model NetworkEquipmentCredential {
+  id             String          @id @default(uuid())
+  equipmentId    String          @map("equipment_id")
+  label          String
+  protocol       NetworkProtocol
+  port           Int?
+  username       String?
+  encryptedValue String          @map("encrypted_value")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  equipment NetworkEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+  @@map("network_equipment_credentials")
+}
+
+model NetworkEquipmentPort {
+  id          String @id @default(uuid())
+  equipmentId String @map("equipment_id")
+  portNumber  String @map("port_number")
+  label       String?
+  vlan        String?
+  connectedTo String? @map("connected_to")
+  status      String  @default("unknown")
+  notes       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  equipment NetworkEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+  @@map("network_equipment_ports")
+}
+
+// ─── Module: Infrastructure — Domains ────────────────────────────────────────
+
+model Domain {
+  id             String     @id @default(uuid())
+  organizationId String     @map("organization_id")
+  name           String
+  type           DomainType
+  pointsTo       String?    @map("points_to")
+  serverId       String?    @map("server_id")
+  projectId      String?    @map("project_id")
+  sslEnabled     Boolean    @default(false) @map("ssl_enabled")
+  sslExpiresAt   DateTime?  @map("ssl_expires_at")
+  registrar      String?
+  expiresAt      DateTime?  @map("expires_at")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  server       Server?      @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("domains")
 }

@@ -19,6 +19,8 @@ import {
   Server,
   LifeBuoy,
   Network,
+  Globe,
+  LayoutDashboard,
 } from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/login/actions'
 
@@ -60,7 +62,10 @@ const devNavItems: NavItem[] = [
 ]
 
 const infraNavItems: NavItem[] = [
-  { label: 'Servidores',  href: '/infrastructure/servers',  icon: Server },
+  { label: 'Dashboard',       href: '/infrastructure',         icon: LayoutDashboard },
+  { label: 'Servidores',      href: '/infrastructure/servers', icon: Server          },
+  { label: 'Equipos de Red',  href: '/infrastructure/network', icon: Network         },
+  { label: 'Dominios',        href: '/infrastructure/domains', icon: Globe           },
 ]
 
 const supportNavItems: NavItem[] = [
@@ -303,8 +308,11 @@ export function Sidebar(props: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/'
+    if (href === '/infrastructure') return pathname === '/infrastructure'
+    return pathname.startsWith(href)
+  }
 
   const closeMobile = () => setMobileOpen(false)
 

@@ -39,15 +39,20 @@ function seedEncrypt(plainText: string): string {
 // ─── Definitions ──────────────────────────────────────────────────────────────
 
 const RESOURCES = [
-  { code: 'projects',              name: 'Proyectos',                   module: 'DEVELOPMENT' as const, sortOrder: 10 },
-  { code: 'projects.credentials',  name: 'Credenciales de Proyectos',   module: 'DEVELOPMENT' as const, sortOrder: 11 },
-  { code: 'projects.change-requests', name: 'Solicitudes de Cambio',    module: 'DEVELOPMENT' as const, sortOrder: 12 },
-  { code: 'projects.source-code',  name: 'Código Fuente',               module: 'DEVELOPMENT' as const, sortOrder: 13 },
-  { code: 'databases',             name: 'Bases de Datos',              module: 'DEVELOPMENT' as const, sortOrder: 20 },
-  { code: 'databases.credentials', name: 'Credenciales de BD',          module: 'DEVELOPMENT' as const, sortOrder: 21 },
-  { code: 'users',                 name: 'Usuarios',                    module: 'SYSTEM'      as const, sortOrder: 30 },
-  { code: 'system.config',         name: 'Configuración del Sistema',   module: 'SYSTEM'      as const, sortOrder: 31 },
-  { code: 'audit.logs',            name: 'Logs de Auditoría',           module: 'SYSTEM'      as const, sortOrder: 32 },
+  { code: 'projects',                       name: 'Proyectos',                   module: 'DEVELOPMENT'    as const, sortOrder: 10 },
+  { code: 'projects.credentials',           name: 'Credenciales de Proyectos',   module: 'DEVELOPMENT'    as const, sortOrder: 11 },
+  { code: 'projects.change-requests',       name: 'Solicitudes de Cambio',       module: 'DEVELOPMENT'    as const, sortOrder: 12 },
+  { code: 'projects.source-code',           name: 'Código Fuente',               module: 'DEVELOPMENT'    as const, sortOrder: 13 },
+  { code: 'databases',                      name: 'Bases de Datos',              module: 'DEVELOPMENT'    as const, sortOrder: 20 },
+  { code: 'databases.credentials',          name: 'Credenciales de BD',          module: 'DEVELOPMENT'    as const, sortOrder: 21 },
+  { code: 'infrastructure.servers',         name: 'Servidores',                  module: 'INFRASTRUCTURE' as const, sortOrder: 40 },
+  { code: 'infrastructure.servers.credentials', name: 'Credenciales de Servidor',module: 'INFRASTRUCTURE' as const, sortOrder: 41 },
+  { code: 'infrastructure.network',         name: 'Equipos de Red',              module: 'INFRASTRUCTURE' as const, sortOrder: 42 },
+  { code: 'infrastructure.network.credentials', name: 'Credenciales de Red',     module: 'INFRASTRUCTURE' as const, sortOrder: 43 },
+  { code: 'infrastructure.domains',         name: 'Dominios',                    module: 'INFRASTRUCTURE' as const, sortOrder: 44 },
+  { code: 'users',                          name: 'Usuarios',                    module: 'SYSTEM'         as const, sortOrder: 30 },
+  { code: 'system.config',                  name: 'Configuración del Sistema',   module: 'SYSTEM'         as const, sortOrder: 31 },
+  { code: 'audit.logs',                     name: 'Logs de Auditoría',           module: 'SYSTEM'         as const, sortOrder: 32 },
 ]
 
 const ACTIONS = [
@@ -62,15 +67,20 @@ const ACTIONS = [
 
 // Valid resource × action combinations
 const RESOURCE_ACTIONS: [string, string[]][] = [
-  ['projects',                 ['view', 'create', 'edit', 'delete']],
-  ['projects.credentials',     ['view', 'create', 'edit', 'delete', 'reveal']],
-  ['projects.change-requests', ['view', 'create', 'edit', 'delete', 'change_status']],
-  ['projects.source-code',     ['view', 'export']],
-  ['databases',                ['view', 'create', 'edit', 'delete']],
-  ['databases.credentials',    ['view', 'create', 'edit', 'delete', 'reveal']],
-  ['users',                    ['view', 'create', 'edit', 'delete']],
-  ['system.config',            ['view', 'edit']],
-  ['audit.logs',               ['view']],
+  ['projects',                             ['view', 'create', 'edit', 'delete']],
+  ['projects.credentials',                 ['view', 'create', 'edit', 'delete', 'reveal']],
+  ['projects.change-requests',             ['view', 'create', 'edit', 'delete', 'change_status']],
+  ['projects.source-code',                 ['view', 'export']],
+  ['databases',                            ['view', 'create', 'edit', 'delete']],
+  ['databases.credentials',                ['view', 'create', 'edit', 'delete', 'reveal']],
+  ['infrastructure.servers',               ['view', 'create', 'edit', 'delete']],
+  ['infrastructure.servers.credentials',   ['view', 'create', 'edit', 'delete', 'reveal']],
+  ['infrastructure.network',               ['view', 'create', 'edit', 'delete']],
+  ['infrastructure.network.credentials',   ['view', 'create', 'edit', 'delete', 'reveal']],
+  ['infrastructure.domains',               ['view', 'create', 'edit', 'delete']],
+  ['users',                                ['view', 'create', 'edit', 'delete']],
+  ['system.config',                        ['view', 'edit']],
+  ['audit.logs',                           ['view']],
 ]
 
 // Role permission definitions:
@@ -83,18 +93,25 @@ const ROLE_PERMISSIONS: Record<string, [string, string[]][]> = {
   owner: RESOURCE_ACTIONS, // all
   admin: RESOURCE_ACTIONS, // all — same as owner; scoping done by business rules
   developer: [
-    ['projects',                 ['view', 'create', 'edit']],
-    ['projects.credentials',     ['view']],
-    ['projects.change-requests', ['view', 'create', 'edit', 'change_status']],
-    ['projects.source-code',     ['view']],
-    ['databases',                ['view']],
-    ['databases.credentials',    ['view']],
+    ['projects',                             ['view', 'create', 'edit']],
+    ['projects.credentials',                 ['view']],
+    ['projects.change-requests',             ['view', 'create', 'edit', 'change_status']],
+    ['projects.source-code',                 ['view']],
+    ['databases',                            ['view']],
+    ['databases.credentials',                ['view']],
+    ['infrastructure.servers',               ['view']],
+    ['infrastructure.network',               ['view']],
+    ['infrastructure.domains',               ['view']],
   ],
   dba: [
-    ['projects',                 ['view']],
-    ['databases',                ['view', 'create', 'edit', 'delete']],
-    ['databases.credentials',    ['view', 'create', 'edit', 'delete', 'reveal']],
-    ['audit.logs',               ['view']],
+    ['projects',                             ['view']],
+    ['databases',                            ['view', 'create', 'edit', 'delete']],
+    ['databases.credentials',                ['view', 'create', 'edit', 'delete', 'reveal']],
+    ['infrastructure.servers',               ['view']],
+    ['infrastructure.servers.credentials',   ['view', 'reveal']],
+    ['infrastructure.network',               ['view']],
+    ['infrastructure.domains',               ['view']],
+    ['audit.logs',                           ['view']],
   ],
   viewer: RESOURCE_ACTIONS.map(([resource]) => [resource, ['view']]),
 }
@@ -723,6 +740,276 @@ async function main() {
     },
   })
   console.log('  ✓ Change request comments: 2 entries')
+
+  // ── Enable infrastructure module ──────────────────────────────────────────
+  await prisma.organization.update({
+    where: { id: org.id },
+    data:  { infrastructureEnabled: true },
+  })
+  console.log('  ✓ Infrastructure module enabled')
+
+  // 21. Server Groups
+  const groupBD = await prisma.serverGroup.upsert({
+    where: { id: 'demo-sg-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-sg-00000000-0000-0000-0000-000000000001',
+      organizationId: org.id,
+      name: 'Servidores de Base de Datos',
+      description: 'Servidores que alojan motores de base de datos',
+      sortOrder: 1,
+    },
+  })
+  const groupApp = await prisma.serverGroup.upsert({
+    where: { id: 'demo-sg-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-sg-00000000-0000-0000-0000-000000000002',
+      organizationId: org.id,
+      name: 'Servidores de Aplicaciones',
+      description: 'Servidores que alojan servicios y aplicaciones web',
+      sortOrder: 2,
+    },
+  })
+  console.log('  ✓ Server groups: 2 entries')
+
+  // 22. Servers
+  const serverDB = await prisma.server.upsert({
+    where: { id: 'demo-srv-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-srv-00000000-0000-0000-0000-000000000001',
+      organizationId: org.id,
+      groupId: groupBD.id,
+      hostname: 'SRV-DB01',
+      displayName: 'Servidor de Base de Datos Principal',
+      ip: '192.168.1.10',
+      os: 'WINDOWS_SERVER',
+      type: 'PHYSICAL',
+      specs: { cpu: 'Intel Xeon E5-2620 v4 @ 2.10GHz (8 cores)', ram: '32 GB DDR4', disk: '2 TB RAID-1 SAS' },
+      location: 'Sala de servidores, Rack A - Unidad 3',
+      domain: 'EJECUTIVO.AMDC',
+      status: 'ACTIVE',
+      notes: 'Servidor principal que aloja SQL Server 2019 para SIGAD. Mantenimiento programado el primer domingo de cada mes.',
+    },
+  })
+  const serverApp = await prisma.server.upsert({
+    where: { id: 'demo-srv-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-srv-00000000-0000-0000-0000-000000000002',
+      organizationId: org.id,
+      groupId: groupApp.id,
+      hostname: 'SRV-APP01',
+      displayName: 'Servidor de Aplicaciones Web',
+      ip: '192.168.1.20',
+      os: 'UBUNTU',
+      type: 'VIRTUAL',
+      specs: { cpu: '4 vCPU', ram: '16 GB RAM', disk: '500 GB SSD' },
+      location: 'Sala de servidores, Rack B - Unidad 7',
+      status: 'ACTIVE',
+      notes: 'Servidor Ubuntu 22.04 LTS. Aloja Portal Ciudadano con Nginx + PM2. Docker instalado.',
+    },
+  })
+  const serverProxy = await prisma.server.upsert({
+    where: { id: 'demo-srv-00000000-0000-0000-0000-000000000003' },
+    update: {},
+    create: {
+      id: 'demo-srv-00000000-0000-0000-0000-000000000003',
+      organizationId: org.id,
+      groupId: groupApp.id,
+      hostname: 'SRV-PROXY01',
+      displayName: 'Proxy / Balanceador',
+      ip: '192.168.1.5',
+      os: 'UBUNTU',
+      type: 'VIRTUAL',
+      specs: { cpu: '2 vCPU', ram: '4 GB RAM', disk: '100 GB SSD' },
+      location: 'Sala de servidores, Rack B - Unidad 1',
+      status: 'ACTIVE',
+      notes: 'Nginx como reverse proxy. Termina SSL y distribuye tráfico.',
+    },
+  })
+  console.log('  ✓ Servers: 3 entries (SRV-DB01, SRV-APP01, SRV-PROXY01)')
+
+  // 23. Server Credentials
+  await prisma.serverCredential.upsert({
+    where: { id: 'demo-sc-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-sc-00000000-0000-0000-0000-000000000001',
+      serverId: serverDB.id,
+      label: 'Administrador RDP',
+      protocol: 'RDP',
+      port: 3389,
+      username: 'Administrador',
+      encryptedValue: seedEncrypt('Admin@AMDC2024!'),
+      domain: 'EJECUTIVO.AMDC',
+      isDefault: true,
+    },
+  })
+  await prisma.serverCredential.upsert({
+    where: { id: 'demo-sc-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-sc-00000000-0000-0000-0000-000000000002',
+      serverId: serverApp.id,
+      label: 'Acceso SSH root',
+      protocol: 'SSH',
+      port: 22,
+      username: 'ubuntu',
+      encryptedValue: seedEncrypt('-----BEGIN RSA PRIVATE KEY-----\nMIIE...(key demo)...==\n-----END RSA PRIVATE KEY-----'),
+      isDefault: true,
+      notes: 'Llave privada RSA 4096 bits',
+    },
+  })
+  await prisma.serverCredential.upsert({
+    where: { id: 'demo-sc-00000000-0000-0000-0000-000000000003' },
+    update: {},
+    create: {
+      id: 'demo-sc-00000000-0000-0000-0000-000000000003',
+      serverId: serverProxy.id,
+      label: 'SSH ubuntu',
+      protocol: 'SSH',
+      port: 22,
+      username: 'ubuntu',
+      encryptedValue: seedEncrypt('ProxySSH@2024!'),
+      isDefault: true,
+    },
+  })
+  console.log('  ✓ Server credentials: 3 entries')
+
+  // 24. Server Services
+  await prisma.serverService.createMany({
+    skipDuplicates: true,
+    data: [
+      { serverId: serverDB.id,    name: 'SQL Server 2019', port: 1433, protocol: 'TCP', status: 'RUNNING' },
+      { serverId: serverDB.id,    name: 'SQL Server Agent', port: null, protocol: null, status: 'RUNNING' },
+      { serverId: serverApp.id,   name: 'Nginx',            port: 80,   protocol: 'HTTP', status: 'RUNNING' },
+      { serverId: serverApp.id,   name: 'Node.js (PM2)',    port: 3000, protocol: 'HTTP', status: 'RUNNING' },
+      { serverId: serverApp.id,   name: 'Docker',           port: null, protocol: null, status: 'RUNNING' },
+      { serverId: serverApp.id,   name: 'PostgreSQL',       port: 5432, protocol: 'TCP', status: 'RUNNING' },
+      { serverId: serverProxy.id, name: 'Nginx',            port: 443,  protocol: 'HTTPS', status: 'RUNNING' },
+      { serverId: serverProxy.id, name: 'Certbot',          port: null, protocol: null, status: 'RUNNING' },
+    ],
+  })
+  console.log('  ✓ Server services: 8 entries')
+
+  // 25. Network Equipment (Switches)
+  const sw1 = await prisma.networkEquipment.upsert({
+    where: { id: 'demo-ne-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-ne-00000000-0000-0000-0000-000000000001',
+      organizationId: org.id,
+      name: 'SW-CORE-01',
+      type: 'SWITCH',
+      brand: 'Cisco',
+      model: 'Catalyst 3850-24T',
+      ip: '192.168.0.1',
+      location: 'Sala de servidores, Rack A - Unidad 1',
+      managementUrl: 'https://192.168.0.1',
+      totalPorts: 24,
+      firmware: '16.12.8',
+      status: 'ACTIVE',
+      notes: 'Switch core de la red interna. VLAN 10 (servidores), VLAN 20 (usuarios), VLAN 30 (gestión).',
+    },
+  })
+  const sw2 = await prisma.networkEquipment.upsert({
+    where: { id: 'demo-ne-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-ne-00000000-0000-0000-0000-000000000002',
+      organizationId: org.id,
+      name: 'SW-ACCESS-01',
+      type: 'SWITCH',
+      brand: 'HP',
+      model: 'Aruba 2530-48G',
+      ip: '192.168.0.2',
+      location: 'Piso 2, Oficinas Administrativas',
+      managementUrl: 'http://192.168.0.2',
+      totalPorts: 48,
+      firmware: 'WB.16.10.0019',
+      status: 'ACTIVE',
+      notes: 'Switch de acceso para usuarios del piso 2.',
+    },
+  })
+  console.log('  ✓ Network equipment: 2 switches')
+
+  // 26. Network Equipment Credentials
+  await prisma.networkEquipmentCredential.upsert({
+    where: { id: 'demo-nec-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-nec-00000000-0000-0000-0000-000000000001',
+      equipmentId: sw1.id,
+      label: 'Administración SSH',
+      protocol: 'SSH',
+      port: 22,
+      username: 'admin',
+      encryptedValue: seedEncrypt('C1sc0Admin@AMDC!'),
+    },
+  })
+  await prisma.networkEquipmentCredential.upsert({
+    where: { id: 'demo-nec-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-nec-00000000-0000-0000-0000-000000000002',
+      equipmentId: sw2.id,
+      label: 'Panel Web',
+      protocol: 'WEB_PANEL',
+      port: 80,
+      username: 'manager',
+      encryptedValue: seedEncrypt('HpSwitch@2024!'),
+    },
+  })
+  console.log('  ✓ Network equipment credentials: 2 entries')
+
+  // 27. Network Equipment Ports (for SW-CORE-01)
+  await prisma.networkEquipmentPort.createMany({
+    skipDuplicates: true,
+    data: [
+      { equipmentId: sw1.id, portNumber: 'Gi1/0/1',  label: 'SRV-DB01',    vlan: '10', connectedTo: 'SRV-DB01 — NIC principal',   status: 'up' },
+      { equipmentId: sw1.id, portNumber: 'Gi1/0/2',  label: 'SRV-APP01',   vlan: '10', connectedTo: 'SRV-APP01 — NIC principal',  status: 'up' },
+      { equipmentId: sw1.id, portNumber: 'Gi1/0/3',  label: 'SRV-PROXY01', vlan: '10', connectedTo: 'SRV-PROXY01 — NIC principal',status: 'up' },
+      { equipmentId: sw1.id, portNumber: 'Gi1/0/24', label: 'Uplink ISP',  vlan: 'trunk', connectedTo: 'Router ISP — WAN',       status: 'up' },
+    ],
+  })
+  console.log('  ✓ Network equipment ports: 4 entries')
+
+  // 28. Domains
+  await prisma.domain.upsert({
+    where: { id: 'demo-dom-00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'demo-dom-00000000-0000-0000-0000-000000000001',
+      organizationId: org.id,
+      name: 'portal.amdc.hn',
+      type: 'PUBLIC',
+      pointsTo: '192.168.1.5',
+      serverId: serverProxy.id,
+      projectId: portalProject.id,
+      sslEnabled: true,
+      sslExpiresAt: new Date('2026-06-15'),
+      registrar: 'NIC Honduras',
+      expiresAt: new Date('2027-01-10'),
+      notes: 'Dominio principal del Portal Ciudadano. SSL renovado con Certbot (Let\'s Encrypt).',
+    },
+  })
+  await prisma.domain.upsert({
+    where: { id: 'demo-dom-00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: 'demo-dom-00000000-0000-0000-0000-000000000002',
+      organizationId: org.id,
+      name: 'EJECUTIVO.AMDC',
+      type: 'INTERNAL',
+      pointsTo: '192.168.1.10',
+      serverId: serverDB.id,
+      sslEnabled: false,
+      notes: 'Dominio Active Directory interno. Controlador de dominio en SRV-DB01.',
+    },
+  })
+  console.log('  ✓ Domains: 2 entries (portal.amdc.hn, EJECUTIVO.AMDC)')
 
   console.log('\n✅ Seed complete!')
   console.log('   Admin:     admin@itforge.local / Admin2024!')
