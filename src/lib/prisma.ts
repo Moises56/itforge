@@ -6,10 +6,22 @@ function createPrismaClient() {
   return new PrismaClient({ adapter })
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createPrismaClient> | undefined
+type PrismaCache = {
+  // Store the constructor reference used to create this client.
+  // When Prisma regenerates (schema change), the module re-evaluates and
+  // PrismaClient becomes a new object — mismatch clears the stale singleton.
+  ctor:   typeof PrismaClient
+  client: ReturnType<typeof createPrismaClient>
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+const g = globalThis as { __prismaCache?: PrismaCache }
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (!g.__prismaCache || g.__prismaCache.ctor !== PrismaClient) {
+  if (g.__prismaCache) {
+    // Disconnect stale client (fire-and-forget to avoid blocking)
+    g.__prismaCache.client.$disconnect().catch(() => {})
+  }
+  g.__prismaCache = { ctor: PrismaClient, client: createPrismaClient() }
+}
+
+export const prisma = g.__prismaCache.client

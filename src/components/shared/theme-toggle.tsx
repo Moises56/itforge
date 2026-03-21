@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+function getInitialTheme(): 'dark' | 'light' {
+  if (typeof window === 'undefined') return 'dark'
+  return document.documentElement.classList.contains('light') ? 'light' : 'dark'
+}
 
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme)
+
+  // Keep state in sync when component mounts (covers SSR hydration)
   useEffect(() => {
-    const stored = localStorage.getItem('itforge-theme') as 'dark' | 'light' | null
-    if (stored) {
-      setTheme(stored)
-      document.documentElement.classList.toggle('light', stored === 'light')
-    }
+    setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark')
   }, [])
 
   const toggle = () => {

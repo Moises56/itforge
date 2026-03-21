@@ -44,6 +44,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="es"
       className={`${rajdhani.variable} ${barlow.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Apply saved theme before first paint — prevents flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('itforge-theme');if(t==='light')document.documentElement.classList.add('light')}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="h-full bg-background text-foreground" suppressHydrationWarning>
         {children}
       </body>
