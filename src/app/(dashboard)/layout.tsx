@@ -3,6 +3,7 @@ import { resolvePermission } from '@/core/permissions/resolve'
 import { getOrgConfig } from '@/core/config/get-org-config'
 import { Sidebar } from '@/components/shared/sidebar'
 import { Breadcrumbs } from '@/components/shared/breadcrumbs'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
 
 /**
  * Dashboard layout — all routes under (dashboard) require authentication.
@@ -99,6 +100,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   Online
                 </span>
               </div>
+              <ThemeToggle />
             </div>
           </header>
 

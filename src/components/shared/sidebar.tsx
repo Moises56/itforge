@@ -21,6 +21,9 @@ import {
   Network,
   Globe,
   LayoutDashboard,
+  Headphones,
+  Monitor,
+  Ticket,
 } from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/login/actions'
 
@@ -69,7 +72,10 @@ const infraNavItems: NavItem[] = [
 ]
 
 const supportNavItems: NavItem[] = [
-  { label: 'Soporte', href: '/support', icon: LifeBuoy },
+  { label: 'Dashboard',          href: '/support',          icon: Headphones },
+  { label: 'Tickets',            href: '/support/tickets',  icon: Ticket     },
+  { label: 'Activos',            href: '/support/assets',   icon: Monitor    },
+  { label: 'Cuentas de usuario', href: '/support/accounts', icon: Users      },
 ]
 
 const adminNavItems: NavItem[] = [
@@ -311,6 +317,7 @@ export function Sidebar(props: SidebarProps) {
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
     if (href === '/infrastructure') return pathname === '/infrastructure'
+    if (href === '/support') return pathname === '/support'
     return pathname.startsWith(href)
   }
 

@@ -35,6 +35,41 @@
   --status-slate:    #475569;
 }
 
+/* ─── Light Theme ─────────────────────────────────────────────────────────── */
+
+.light {
+  /* Backgrounds */
+  --background:      #f8fafc;
+  --surface:         #ffffff;
+  --surface-2:       #f1f5f9;
+  --surface-3:       #e2e8f0;
+
+  /* Borders */
+  --border:          #e2e8f0;
+  --border-bright:   #cbd5e1;
+  --border-focus:    #2563eb;
+
+  /* Accent (same as dark) */
+  --accent:          #2563eb;
+  --accent-hover:    #1d4ed8;
+  --accent-glow:     rgba(37, 99, 235, 0.08);
+  --accent-cyan:     #0891b2;
+  --accent-cyan-dim: rgba(8, 145, 178, 0.1);
+
+  /* Text */
+  --foreground:      #0f172a;
+  --foreground-muted: #475569;
+  --foreground-dim:  #94a3b8;
+
+  /* Status (same) */
+  --status-green:    #059669;
+  --status-blue:     #2563eb;
+  --status-purple:   #7c3aed;
+  --status-amber:    #d97706;
+  --status-red:      #dc2626;
+  --status-slate:    #64748b;
+}
+
 /* ─── Tailwind v4 Theme Extension ─────────────────────────────────────────── */
 
 @theme inline {

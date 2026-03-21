@@ -189,6 +189,9 @@ model Organization {
   servers          Server[]
   networkEquipment NetworkEquipment[]
   domains          Domain[]
+  assets           Asset[]
+  supportTickets   SupportTicket[]
+  userAccounts     UserAccount[]
 
   @@map("organizations")
 }
@@ -212,6 +215,9 @@ model Department {
   users        User[]
   usages       DepartmentUsage[]
   changeRequests ChangeRequest[]
+  assets           Asset[]
+  supportTickets   SupportTicket[]
+  userAccounts     UserAccount[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -248,6 +254,10 @@ model User {
   uploadedDocuments       ProjectDocument[]
   uploadedAttachments     ChangeRequestAttachment[]
   uploadedServerDocuments ServerDocument[]
+  assignedTickets       SupportTicket[]   @relation("TicketAssignee")
+  ticketComments        SupportTicketComment[]
+  uploadedTicketFiles   SupportTicketAttachment[]
+  performedMaintenance  MaintenanceLog[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -457,6 +467,7 @@ model Project {
   changeRequests   ChangeRequest[]
   databases        Database[]
   domains          Domain[]
+  supportTickets   SupportTicket[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -848,6 +859,7 @@ model Server {
   services     ServerService[]
   documents    ServerDocument[]
   domains      Domain[]
+  supportTickets   SupportTicket[]
 
   @@index([organizationId])
   @@map("servers")
@@ -1008,4 +1020,236 @@ model Domain {
 
   @@index([organizationId])
   @@map("domains")
+}
+
+// ─── Module: Support — Enums ──────────────────────────────────────────────────
+
+enum AssetType {
+  DESKTOP
+  LAPTOP
+  PRINTER
+  SCANNER
+  MONITOR
+  UPS
+  PHONE
+  TABLET
+  OTHER
+
+  @@map("asset_type")
+}
+
+enum AssetStatus {
+  ACTIVE
+  IN_REPAIR
+  STORAGE
+  DECOMMISSIONED
+  LOST
+
+  @@map("asset_status")
+}
+
+enum SupportTicketType {
+  HARDWARE_REPAIR
+  SOFTWARE_INSTALL
+  ACCESS_REQUEST
+  NETWORK_ISSUE
+  PRINTER_ISSUE
+  GENERAL_SUPPORT
+  OTHER
+
+  @@map("support_ticket_type")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_PARTS
+  WAITING_USER
+  RESOLVED
+  CLOSED
+
+  @@map("support_ticket_status")
+}
+
+enum MaintenanceLogType {
+  PREVENTIVE
+  CORRECTIVE
+  CLEANING
+  UPGRADE
+
+  @@map("maintenance_log_type")
+}
+
+enum UserAccountType {
+  DOMAIN_AD
+  EMAIL
+  VPN
+  SYSTEM_ACCESS
+  OTHER
+
+  @@map("user_account_type")
+}
+
+enum UserAccountStatus {
+  ACTIVE
+  DISABLED
+  EXPIRED
+
+  @@map("user_account_status")
+}
+
+// ─── Module: Support — Asset ──────────────────────────────────────────────────
+
+model Asset {
+  id                   String      @id @default(uuid())
+  organizationId       String      @map("organization_id")
+  name                 String
+  type                 AssetType
+  brand                String?
+  model                String?
+  serialNumber         String?     @map("serial_number")
+  assetTag             String?     @map("asset_tag")
+  assignedToUser       String?     @map("assigned_to_user")
+  assignedToDepartmentId String?   @map("assigned_to_department_id")
+  status               AssetStatus @default(ACTIVE)
+  purchaseDate         DateTime?   @map("purchase_date")
+  warrantyExpires      DateTime?   @map("warranty_expires")
+  specs                Json?
+  location             String?
+  notes                String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization       Organization    @relation(fields: [organizationId], references: [id])
+  assignedDepartment Department?     @relation(fields: [assignedToDepartmentId], references: [id], onDelete: SetNull)
+  supportTickets     SupportTicket[]
+  maintenanceLogs    MaintenanceLog[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("assets")
+}
+
+// ─── Module: Support — Tickets ────────────────────────────────────────────────
+
+model SupportTicket {
+  id                    String              @id @default(uuid())
+  organizationId        String              @map("organization_id")
+  ticketNumber          String              @map("ticket_number")
+  title                 String
+  description           String?
+  type                  SupportTicketType
+  priority              Priority            @default(MEDIUM)
+  status                SupportTicketStatus @default(OPEN)
+  requestedByName       String              @map("requested_by_name")
+  requestedByDepartmentId String?           @map("requested_by_department_id")
+  assignedToId          String?             @map("assigned_to_id")
+  assetId               String?             @map("asset_id")
+  projectId             String?             @map("project_id")
+  serverId              String?             @map("server_id")
+  resolution            String?
+  resolvedAt            DateTime?           @map("resolved_at")
+  closedAt              DateTime?           @map("closed_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  organization        Organization              @relation(fields: [organizationId], references: [id])
+  requestedByDept     Department?               @relation(fields: [requestedByDepartmentId], references: [id], onDelete: SetNull)
+  assignedTo          User?                     @relation("TicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  asset               Asset?                    @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  project             Project?                  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  server              Server?                   @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  comments            SupportTicketComment[]
+  attachments         SupportTicketAttachment[]
+
+  @@unique([organizationId, ticketNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([assignedToId])
+  @@map("support_tickets")
+}
+
+model SupportTicketComment {
+  id         String  @id @default(uuid())
+  ticketId   String  @map("ticket_id")
+  userId     String  @map("user_id")
+  content    String
+  isInternal Boolean @default(false) @map("is_internal")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+  deletedAt DateTime?                 @map("deleted_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@map("support_ticket_comments")
+}
+
+model SupportTicketAttachment {
+  id           String  @id @default(uuid())
+  ticketId     String  @map("ticket_id")
+  filePath     String  @map("file_path")
+  fileName     String  @map("file_name")
+  fileSize     Int?    @map("file_size")
+  mimeType     String? @map("mime_type")
+  uploadedById String? @map("uploaded_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@map("support_ticket_attachments")
+}
+
+// ─── Module: Support — Maintenance & Accounts ─────────────────────────────────
+
+model MaintenanceLog {
+  id              String             @id @default(uuid())
+  assetId         String             @map("asset_id")
+  type            MaintenanceLogType
+  description     String
+  performedById   String?            @map("performed_by_id")
+  performedAt     DateTime           @map("performed_at")
+  nextMaintenanceAt DateTime?        @map("next_maintenance_at")
+  notes           String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  performedBy User? @relation(fields: [performedById], references: [id], onDelete: SetNull)
+
+  @@index([assetId])
+  @@map("maintenance_logs")
+}
+
+model UserAccount {
+  id             String            @id @default(uuid())
+  organizationId String            @map("organization_id")
+  fullName       String            @map("full_name")
+  username       String
+  domain         String?
+  email          String?
+  departmentId   String?           @map("department_id")
+  accountType    UserAccountType   @map("account_type")
+  status         UserAccountStatus @default(ACTIVE)
+  createdDate    DateTime?         @map("created_date")
+  expirationDate DateTime?         @map("expiration_date")
+  notes          String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("user_accounts")
 }
